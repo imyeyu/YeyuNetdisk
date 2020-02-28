@@ -1,5 +1,8 @@
 package net.imyeyu.netdisk.dialog;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.google.gson.Gson;
 
 import javafx.beans.property.SimpleBooleanProperty;
@@ -19,30 +22,26 @@ import net.imyeyu.netdisk.bean.FileCell;
 import net.imyeyu.netdisk.request.PublicRequest;
 import net.imyeyu.utils.gui.BorderX;
 
-public class Rename extends Stage {
+public class Zip extends Stage {
 	
 //	private ResourceBundle rb;
 	
 	private Label title, tips;
-	private String path, oldValue;
+	private String path;
 	private TextField name;
 	private VBox content;
-	private Button confirm, cancel;
+	private Button confirm, skip, cancel;
 	private ObservableList<FileCell> list;
 	private SimpleBooleanProperty isFinish = new SimpleBooleanProperty(false);
 
-	public Rename(String path, String oldValue, ObservableList<FileCell> list) {
-		oldValue = oldValue.substring(oldValue.indexOf(".") + 1);
-		
-		this.list = list;
+	public Zip(String path, ObservableList<FileCell> list) {
 		this.path = path;
-		this.oldValue = oldValue;
+		this.list = list;
 		
 		BorderPane main = new BorderPane();
-		
 		content = new VBox();
-		title = new Label("请输入新的名称：");
-		name = new TextField(oldValue);
+		title = new Label("请输入压缩包名称：");
+		name = new TextField();
 		tips = new Label();
 		content.setSpacing(8);
 		content.setPadding(new Insets(8));
@@ -50,19 +49,21 @@ public class Rename extends Stage {
 		
 		HBox btnBox = new HBox();
 		confirm = new Button("确认");
+		skip = new Button("跳过");
+		skip.setDisable(true);
 		cancel = new Button("取消");
 		btnBox.setPadding(new Insets(6, 12, 6, 12));
 		btnBox.setSpacing(14);
 		btnBox.setAlignment(Pos.CENTER);
 		btnBox.setBorder(new BorderX("#B5B5B5", BorderX.SOLID, 1).top());
-		btnBox.getChildren().addAll(confirm, cancel);
+		btnBox.getChildren().addAll(confirm, skip, cancel);
 		
 		main.setCenter(content);
 		main.setBottom(btnBox);
 		
 		Scene scene = new Scene(main);
 		setScene(scene);
-		setTitle("重命名");
+		setTitle("压缩文件");
 		setWidth(260);
 		setHeight(140);
 		setResizable(false);
@@ -70,12 +71,19 @@ public class Rename extends Stage {
 		show();
 
 		confirm.setFocusTraversable(false);
+		skip.setFocusTraversable(false);
 		cancel.setFocusTraversable(false);
 		
 		confirm.setOnAction(event -> confirm());
+		skip.setOnAction(event -> close());
 		cancel.setOnAction(event -> close());
+		
+		name.textProperty().addListener((obs, oldValue, newValue) -> {
+			if (newValue.equals("")) confirm.setDisable(true);
+		});
 		name.setOnKeyPressed(evnet -> {
 			confirm.setDisable(false);
+			skip.setDisable(true);
 			cancel.setDisable(false);
 			content.getChildren().remove(tips);
 			setHeight(140);
@@ -83,24 +91,36 @@ public class Rename extends Stage {
 	}
 	
 	private void confirm() {
+		name.setDisable(true);
 		confirm.setDisable(true);
-		
+		skip.setDisable(false);
+
+		content.getChildren().add(tips);
+		setHeight(170);
+
 		// 检查命名
-		String oldName;
+		String fileName;
 		for (int i = 0; i < list.size(); i++) {
-			oldName = list.get(i).getName();
-			if (name.getText().equals(oldName.substring(oldName.indexOf(".") + 1))) {
-				content.getChildren().add(tips);
+			fileName = list.get(i).getName();
+			if (name.getText().equals(fileName.substring(fileName.indexOf(".") + 1))) {
 				tips.setText("该命名对象已存在当前目录");
-				setHeight(170);
 				return;
 			}
 		}
 
 		cancel.setDisable(true);
 		
-		RenameFile file = new RenameFile(path, oldValue, name.getText());
-		PublicRequest request = new PublicRequest("rename", new Gson().toJson(file));
+		List<String> zipFiles = new ArrayList<>();
+		for (int i = 0; i < list.size(); i++) {
+			fileName = list.get(i).getName();
+			zipFiles.add(path + fileName.substring(fileName.indexOf(".") + 1));
+		}
+		// 请求压缩
+		ZipFile file = new ZipFile(name.getText(), path, zipFiles);
+		PublicRequest request = new PublicRequest("zip", new Gson().toJson(file));
+		request.messageProperty().addListener((obs, oldValue, newValue) -> {
+			System.out.println(newValue);
+		});
 		request.valueProperty().addListener((list, oldValue, newValue) -> {
 			if (newValue != null && newValue.equals("finish")) isFinish.set(true);
 			close();
@@ -112,20 +132,20 @@ public class Rename extends Stage {
 		return isFinish;
 	}
 	
-	private class RenameFile {
+	private class ZipFile {
 		
+		private String name;
 		private String path;
-		private String oldValue;
-		private String newValue;
+		private List<String> list;
 		
-		public RenameFile(String path, String oldValue, String newValue) {
+		public ZipFile(String name, String path, List<String> list) {
+			this.name = name;
 			this.path = path;
-			this.oldValue = oldValue;
-			this.newValue = newValue;
+			this.list = list;
 		}
 
 		public String toString() {
-			return "RenameFile [path=" + path + ", oldValue=" + oldValue + ", newValue=" + newValue + "]";
+			return "ZipFile [name=" + name + ", path=" + path + ", list=" + list + "]";
 		}
 	}
 }

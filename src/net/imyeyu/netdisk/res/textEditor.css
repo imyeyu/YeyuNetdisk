@@ -1,0 +1,8 @@
+.text-area {
+	-fx-background-color: #FFFF;
+	-fx-background-insets: 0;
+}
+
+#line *.text {
+    -fx-text-alignment: right;
+}

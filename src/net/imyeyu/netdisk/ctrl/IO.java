@@ -1,22 +1,28 @@
 package net.imyeyu.netdisk.ctrl;
 
 import java.util.List;
+import java.util.Map;
 
 import javafx.beans.property.SimpleListProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.ObservableList;
+import net.imyeyu.netdisk.Entrance;
+import net.imyeyu.netdisk.bean.DownloadFile;
 import net.imyeyu.netdisk.bean.IOCell;
 import net.imyeyu.netdisk.bean.IOHistory;
+import net.imyeyu.netdisk.bean.UploadFile;
 import net.imyeyu.netdisk.core.Download;
-import net.imyeyu.netdisk.core.Download.DownloadFile;
 import net.imyeyu.netdisk.core.Upload;
-import net.imyeyu.netdisk.core.Upload.UploadFile;
 import net.imyeyu.netdisk.view.ViewIO;
 
 public class IO extends ViewIO {
 	
 	private Upload upload;
 	private Download download;
+	
 	private String isUpload, isDownload;
+	private Map<String, Object> config = Entrance.getConfig();
+	private SimpleStringProperty show;
 	
 	private ObservableList<IOCell> uploadList, downloadList;
 	private ObservableList<IOHistory> finishList;
@@ -55,15 +61,12 @@ public class IO extends ViewIO {
 		super.close();
 	}
 	
+	// 获取核心上传队列
 	private void initUploadList() {
 		IOCell cell;
 		uploadList = getUploadList().getItems();
-//		for (int i = 0; i < 5; i++) {
-//			cell = new IOCell("test" + i + ".jar", 2000, -1);
-//			uploadList.add(cell);
-//		}
 		SimpleListProperty<UploadFile> files = Upload.getListProperty();
-		for (int i = 0; i < files.size(); i++) {
+		for (int i = Upload.getIndex(); i < files.size(); i++) {
 			cell = new IOCell(files.get(i).getName(), files.get(i).getSize(), -1);
 			cell.setPath(files.get(i).getToPath());
 			cell.setLocal(false);
@@ -71,26 +74,16 @@ public class IO extends ViewIO {
 			uploadList.add(cell);
 		}
 		if (0 < uploadList.size()) bindUploadCore(uploadList.get(0));
-//		uploadList.addListener(new ListChangeListener<IOCell>() {
-//			public void onChanged(Change<? extends IOCell> c) {
-//				System.out.println("change");
-////				c.next();
-////				upload.remove(c.getRemoved().get(0));
-//			}
-//		});
-//		uploadList.removeListener(new ListChangeListener<IOCell>() {
-//			public void onChanged(Change<? extends IOCell> c) {
-//				System.out.println("remove");
-//			}
-//		});
 	}
+	
+	// 获取核心下载队列
 	private void initDownloadList() {
 		IOCell cell;
 		downloadList = getDownloadList().getItems();
-		SimpleListProperty<DownloadFile> files = download.getListProperty();
-		for (int i = 0; i < files.size(); i++) {
+		SimpleListProperty<DownloadFile> files = Download.getListProperty();
+		for (int i = Download.getIndex(); i < files.size(); i++) {
 			cell = new IOCell(files.get(i).getName(), files.get(i).getSize(), -1);
-			cell.setPath(Download.DL_PATH);
+			cell.setPath(config.get("dlLocation").toString());
 			cell.setLocal(true);
 			cell.setMaxSize(files.get(i).getSize());
 			downloadList.add(cell);
@@ -100,13 +93,14 @@ public class IO extends ViewIO {
 	
 	private void initFinishList() {
 		finishList = getFinishList().getItems();
+		show = getFinishList().getShow();
 	}
 	
+	// 绑定上传核心
 	private void bindUploadCore(IOCell cell) {
 		upload.messageProperty().addListener((list, oldValue, newValue) -> {
 			if (!newValue.equals(isUpload)) { // 不明原因会被多次执行
 				if (uploadList.size() != 0) {
-					finishList.add(0, new IOHistory(uploadList.get(0).getName(), uploadList.get(0).getPath(), false));
 					isUpload = newValue;
 					uploadList.remove(0);
 					getUploadList().refresh();
@@ -122,11 +116,12 @@ public class IO extends ViewIO {
 		});
 	}
 	
+	// 绑定下载核心
 	private void bindDownloadCore(IOCell cell) {
 		download.messageProperty().addListener((list, oldValue, newValue) -> {
 			if (!newValue.equals(isDownload)) {
 				if (downloadList.size() != 0) {
-					finishList.add(0, new IOHistory(downloadList.get(0).getName(), downloadList.get(0).getPath(), true));
+					finishList.add(0, new IOHistory(downloadList.get(0).getName(), newValue.substring(newValue.indexOf("#") + 1), true));
 					isDownload = newValue;
 					downloadList.remove(0);
 					getDownloadList().refresh();
@@ -140,5 +135,9 @@ public class IO extends ViewIO {
 		download.progressProperty().addListener((list, oldValue, newValue) -> {
 			cell.setPercent(newValue.doubleValue());
 		});
+	}
+
+	public SimpleStringProperty getShow() {
+		return show;
 	}
 }

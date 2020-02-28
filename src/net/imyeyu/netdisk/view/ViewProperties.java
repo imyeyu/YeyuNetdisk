@@ -18,7 +18,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import net.imyeyu.netdisk.Entrance;
 import net.imyeyu.netdisk.bean.FileCell;
-import net.imyeyu.netdisk.util.FileIcon;
+import net.imyeyu.netdisk.util.FileFormat;
 import net.imyeyu.utils.gui.BorderX;
 
 public class ViewProperties extends Stage {
@@ -31,7 +31,7 @@ public class ViewProperties extends Stage {
 		String fileName = fileCell.getName();
 		String fileType = fileName.substring(0, fileName.indexOf("."));
 		// 窗体图标
-		getIcons().add(FileIcon.getImage(fileType));
+		getIcons().add(FileFormat.getImage(fileType));
 		fileType = fileType.equals("folder") ? "文件夹" : fileType;
 		fileName = fileName.substring(fileName.indexOf(".") + 1);
 		DecimalFormat formatSize = new DecimalFormat("#,###");

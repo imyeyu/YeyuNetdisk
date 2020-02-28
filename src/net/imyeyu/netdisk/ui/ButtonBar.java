@@ -11,9 +11,11 @@ import net.imyeyu.utils.gui.BorderX;
 public class ButtonBar extends FlowPane {
 	
 	private int radius = 2;
+	private Button[] btns;
 	private boolean isSetBorder = true;
 	
 	private void init(Button... button) {
+		this.btns = button;
 		HBox box = new HBox();
 		BorderX border = new BorderX("#B5B5B5", BorderX.SOLID, 1);
 		border.setRadius(radius, false);
@@ -42,6 +44,28 @@ public class ButtonBar extends FlowPane {
 
 	public void setRadius(int radius) {
 		this.radius = radius;
+	}
+	
+	public void setEnable(boolean isEnable) {
+		for (int i = 0; i < btns.length; i++) {
+			btns[i].setDisable(!isEnable);
+		}
+	}
+	
+	public void setEnable(boolean isEnable, int end) {
+		for (int i = 0; i < end; i++) {
+			btns[i].setDisable(!isEnable);
+		}
+	}
+	
+	public void setEnable(boolean isEnable, int start, int end) {
+		for (int i = start; i < end; i++) {
+			btns[i].setDisable(!isEnable);
+		}
+	}
+	
+	public int length() {
+		return btns.length;
 	}
 
 	public void add(Button button) {

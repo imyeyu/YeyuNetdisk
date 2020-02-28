@@ -2,10 +2,10 @@ package net.imyeyu.netdisk.ui;
 
 import java.text.DecimalFormat;
 
+import javafx.beans.property.SimpleListProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
-import javafx.scene.AccessibleAction;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
@@ -20,15 +20,24 @@ import javafx.scene.layout.BackgroundPosition;
 import javafx.scene.layout.BackgroundRepeat;
 import javafx.scene.layout.BackgroundSize;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import javafx.util.Callback;
+import net.imyeyu.netdisk.bean.DownloadFile;
 import net.imyeyu.netdisk.bean.IOCell;
+import net.imyeyu.netdisk.bean.UploadFile;
+import net.imyeyu.netdisk.core.Download;
 import net.imyeyu.netdisk.core.Upload;
-import net.imyeyu.netdisk.util.FileIcon;
+import net.imyeyu.netdisk.util.FileFormat;
 import net.imyeyu.utils.YeyuUtils;
 
 public class IOList extends ListView<IOCell>{
 	
 	private DecimalFormat format = new DecimalFormat("#,###");
+	private AnchorPane main;
+	private ProgressBar pb;
+	private HBox file;
+	private ImageView icon;
+	private Label name, size;
 	
 	public IOList(ObservableList<IOCell> list) {
 		super(list);
@@ -43,43 +52,36 @@ public class IOList extends ListView<IOCell>{
 		setStyle("-fx-background-insets: 0");
 		setCellFactory(new Callback<ListView<IOCell>, ListCell<IOCell>>() {
 			
-			int i = 0;
 			private ObservableList<IOCell> obsList = list;
 			private Button cancel;
 			
 			public ListCell<IOCell> call(ListView<IOCell> param) {
 				ListCell<IOCell> list = new ListCell<IOCell>() {
-					
-					public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
-						super.executeAccessibleAction(action, parameters);
-						System.out.println("action");
-					}
-
 					protected void updateItem(IOCell item, boolean empty) {
 						super.updateItem(item, empty);
 						if (!empty && item != null) {
-							AnchorPane main = new AnchorPane();
+							main = new AnchorPane();
 							main.setPrefHeight(30);
 							// 进度条
-							ProgressBar pb = new ProgressBar(-1);
+							pb = new ProgressBar(-1);
 							pb.progressProperty().bind(item.getPercentProperty());
 							AnchorPane.setTopAnchor(pb, -4d);
 							AnchorPane.setLeftAnchor(pb, -10d);
 							AnchorPane.setRightAnchor(pb, -10d);
 							AnchorPane.setBottomAnchor(pb, -4d);
 							// 文件名
-							HBox file = new HBox();
-							String format = item.getName().substring(item.getName().lastIndexOf(".") + 1);
-							ImageView icon = new ImageView(FileIcon.getImage(format));
-							Label name = new Label(item.getName());
+							file = new HBox();
+							icon = new ImageView(FileFormat.getImage(item.getName().substring(item.getName().lastIndexOf(".") + 1)));
+							name = new Label(item.getName());
 							file.setSpacing(6);
 							file.getChildren().addAll(icon, name);
 							AnchorPane.setTopAnchor(file, 6d);
+							AnchorPane.setLeftAnchor(file, 4d);
+							AnchorPane.setRightAnchor(file, 140d);
 							// 文件大小进度
-							Label size = new Label();
-							String maxSize = formatSize(item.getMaxSize());
+							size = new Label();
 							size.textProperty().bind(new SimpleStringProperty(
-								formatSize(item.getSizeProperty().doubleValue()) + " / " + maxSize
+								formatSize(item.getSizeProperty().doubleValue()) + " / " + formatSize(item.getMaxSize())
 							));
 							AnchorPane.setTopAnchor(size, 6d);
 							AnchorPane.setRightAnchor(size, 32d);
@@ -90,36 +92,37 @@ public class IOList extends ListView<IOCell>{
 							cancel.setBackground(bgCancel);
 							AnchorPane.setTopAnchor(cancel, 6d);
 							AnchorPane.setRightAnchor(cancel, 4d);
-
-							/*
-							 * 取消动作
-							 * 以下代码可以正常执行，但存在 bug
-							 * 理论上不可取消正在传输的任务
-							 * 
-							 */
 							cancel.setOnAction(event -> {
-//								for (int j = 0; j < obsList.size(); j++) {
-//									if (item.getName().equals(Upload.getListProperty().get(j).getName())) {
-//										obsList.remove(j);
-//										Upload.getListProperty().remove(j);
-//										return;
-//									}
-//								}
+								SimpleListProperty<UploadFile> uplaod = Upload.getListProperty();
+								for (int i = 0; i < uplaod.size(); i++) {
+									if (item.getName().equals(uplaod.get(i).getName())) {
+										obsList.remove(i);
+										Upload.getListProperty().remove(i);
+										return;
+									}
+								}
+								SimpleListProperty<DownloadFile> download = Download.getListProperty();
+								for (int i = 0; i < download.size(); i++) {
+									if (item.getName().equals(download.get(i).getName())) {
+										obsList.remove(i);
+										Download.getListProperty().remove(i);
+										return;
+									}
+								}
 							});
-							main.getChildren().addAll(pb, file, size);
-							if (1 < i) main.getChildren().add(cancel);
-							this.setGraphic(main);
 							
-							i++;
+							main.getChildren().addAll(pb, file, size);
+							if (pb.getProgress() == -1) main.getChildren().add(cancel);
+							
+							setPrefWidth(Region.USE_PREF_SIZE);
+							this.setGraphic(main);
 						} else {
 							this.setGraphic(null);
 						}
 					}
 				};
-				
 				return list;
 			}
-			
 		});
 	}
 	

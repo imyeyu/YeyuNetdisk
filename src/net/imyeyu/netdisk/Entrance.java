@@ -24,7 +24,7 @@ public class Entrance {
 	static List<IOCell> history;
 	
 	public static void main(String[] args) {
-		config = new Configer("net/imyeyu/netdisk/res/NetDisk.ini").get();
+		config = new Configer("net/imyeyu/netdisk/res/Netdisk.ini").get();
 		Locale.setDefault(new Locale("zh", "CN"));
 		rb = ResourceBundle.getBundle("lang/language");
 		
@@ -36,6 +36,9 @@ public class Entrance {
 	}
 	
 	public static Map<String, Object> getConfig() {
+		if (config.get("defaultUploadFolder").equals("")) {
+			config.put("defaultUploadFolder", System.getProperty("user.dir"));
+		}
 		return config;
 	}
 	

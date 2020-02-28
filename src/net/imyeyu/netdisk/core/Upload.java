@@ -15,24 +15,28 @@ import java.util.Map;
 
 import com.google.gson.Gson;
 
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleListProperty;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import net.imyeyu.netdisk.Entrance;
-import net.imyeyu.netdisk.bean.IOCell;
 import net.imyeyu.netdisk.bean.Request;
+import net.imyeyu.netdisk.bean.UploadFile;
 import net.imyeyu.utils.YeyuUtils;
 
 public class Upload extends Service<Double> {
 	
 	private boolean isShutdown = false;
 	private static SimpleListProperty<UploadFile> list = new SimpleListProperty<UploadFile>();
+	private SimpleBooleanProperty finish = new SimpleBooleanProperty(false);
 
 	private InputStream is;
 	private OutputStream os;
+	private static int iUpload = 0; // 正在传输的下标
 	private Map<String, Object> config = Entrance.getConfig();
 	private String ip, token; int port;
+	private double transpeed = 0;
 
 	public Upload() {
 		list.set(FXCollections.observableArrayList());
@@ -53,7 +57,7 @@ public class Upload extends Service<Double> {
 				while (!isShutdown) {
 					config = Entrance.getConfig();
 					for (int i = 0; i < list.size(); i++) {
-						Thread.sleep(1000);
+						Thread.sleep(500);
 						if (socket != null && socket.isConnected()) {
 							socket.close();
 							socket = null;
@@ -72,6 +76,7 @@ public class Upload extends Service<Double> {
 							is = socket.getInputStream();
 							BufferedReader br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
 							if (br.readLine().equals("ready")) {
+								iUpload = i;
 								FileInputStream fis = new FileInputStream(new File(list.get(i).getFromPath()));
 								DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
 								byte[] bytes = new byte[4096];
@@ -80,13 +85,15 @@ public class Upload extends Service<Double> {
 								while ((length = fis.read(bytes, 0, bytes.length)) != -1) {
 									dos.write(bytes, 0, length);
 									dos.flush();
-//									Thread.sleep(10); // 本地测试限速
+									Thread.sleep(10); // 本地测试限速
 									progress += length;
+									transpeed += length;
 									updateValue(progress);
 									updateProgress(progress / fileSize, 1);
 								}
 								if (fis != null) fis.close();
 								if (dos != null) dos.close();
+								finish.setValue(!finish.getValue());
 								updateMessage("finish" + i);
 							}
 						}
@@ -116,51 +123,27 @@ public class Upload extends Service<Double> {
 		}
 	}
 	
-	public void remove(IOCell cell) {
-		for (int i = 0; i < list.size(); i++) {
-			if (list.get(i).getName().equals(cell.getName())) {
-				list.get().remove(i);
-				return;
-			}
-		}
+	public void add(UploadFile file) {
+		list.get().add(file);
 	}
-
-	public class UploadFile {
-		
-		private String name;
-		private String fromPath;
-		private String toPath;
-		private long size;
-		
-		public UploadFile(String name, String fromPath, String toPath, long size) {
-			this.name = name;
-			this.fromPath = fromPath;
-			this.toPath = toPath;
-			this.size = size;
-		}
-
-		public String getName() {
-			return name;
-		}
-
-		public String getFromPath() {
-			return fromPath;
-		}
-
-		public String getToPath() {
-			return toPath;
-		}
-
-		public long getSize() {
-			return size;
-		}
+	
+	public static int getIndex() {
+		return iUpload;
 	}
 	
 	public void shutdown() {
 		this.isShutdown = true;
 	}
 	
+	public double getTranspeed() {
+		return transpeed;
+	}
+	
 	public static SimpleListProperty<UploadFile> getListProperty() {
 		return list;
+	}
+
+	public SimpleBooleanProperty getFinish() {
+		return finish;
 	}
 }

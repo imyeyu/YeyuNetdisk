@@ -53,14 +53,18 @@ public class StateRequest extends Service<String> {
 						while (!isShutdown) {
 							br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
 							result = br.readLine();
-							updateValue(result);
+							if (!result.equals("null")) {
+								updateValue(result);
+							} else {
+								Thread.sleep(200);
+							}
 						}
 						socket.getOutputStream().close();
 						socket.getInputStream().close();
 						socket.close();
 					}
 				} catch (IOException e) {
-					e.printStackTrace();
+					// 中断，直接把包丢了
 				}
 				return null;
 			}

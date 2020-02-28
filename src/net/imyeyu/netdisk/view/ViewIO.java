@@ -76,10 +76,9 @@ public class ViewIO extends Stage {
 		main.setLeft(left);
 		
 		Scene scene = new Scene(main);
-		String pbCSS = this.getClass().getResource("/net/imyeyu/netdisk/res/IOList.css").toExternalForm();
-		scene.getStylesheets().add(pbCSS);
+		scene.getStylesheets().add(this.getClass().getResource("/net/imyeyu/netdisk/res/ioList.css").toExternalForm());
 		setTitle("传输列表");
-		getIcons().add(new Image("net/imyeyu/netdisk/res/ioList.png"));
+		getIcons().add(new Image("net/imyeyu/netdisk/res/ioListTitle.png"));
 		setMinWidth(460);
 		setMinHeight(270);
 		setWidth(460);

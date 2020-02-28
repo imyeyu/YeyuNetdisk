@@ -8,6 +8,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
@@ -15,7 +16,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import net.imyeyu.netdisk.Entrance;
 import net.imyeyu.netdisk.ui.ButtonBar;
-import net.imyeyu.netdisk.ui.FileList;
+import net.imyeyu.netdisk.ui.FileListTable;
 import net.imyeyu.netdisk.ui.NavButton;
 import net.imyeyu.netdisk.ui.ServerState;
 import net.imyeyu.netdisk.ui.TipsPane;
@@ -25,16 +26,15 @@ import net.imyeyu.utils.gui.SeparatorX;
 
 public class ViewMain extends Stage {
 	
-	private ResourceBundle rb;
-	private Button open, propertie, sync, upload, download, newFolder, rename, move, copy, delete, ioList, setting, photo, document, backup, tomcatFile, prev, next, parent, refresh, share, search;
-	private FileList fileList;
+	private ResourceBundle rb = Entrance.getRb();
+	private Button open, propertie, sync, upload, download, zip, unzip, newFolder, rename, move, copy, delete, ioList, setting, photo, document, backup, publicFile, prev, next, parent, refresh, root, toPublic, search;
 	private TipsPane tipsPane;
 	private TextField path, searchField;
+	private ButtonBar fileCtrlBtns;
 	private ServerState cpu, memory, disk;
+	private FileListTable fileList;
 	
 	public ViewMain() {
-		this.rb = Entrance.getRb();
-		
 		BorderPane topPane = new BorderPane();
 		// 文件控制栏
 		FlowPane ctrlLeft = new FlowPane();
@@ -49,19 +49,21 @@ public class ViewMain extends Stage {
 		
 		// 文件操作
 		FlowPane ctrlCenter = new FlowPane();
-		ButtonBar fileCtrlBtns = new ButtonBar();
+		fileCtrlBtns = new ButtonBar();
 		sync = new Button(rb.getString("mainFileSync"));
 		YeyuUtils.gui().setBackground(sync, "net/imyeyu/netdisk/res/sync.png", 16, 5, 5);
 		upload = new Button(rb.getString("mainFileUpload"));
 		YeyuUtils.gui().setBackground(upload, "net/imyeyu/netdisk/res/upload.png", 16, 5, 5);
 		download = new Button(rb.getString("mainFileDownload"));
 		YeyuUtils.gui().setBackground(download, "net/imyeyu/netdisk/res/download.png", 16, 5, 5);
+		zip = new Button("压缩");
+		unzip = new Button("解压");
 		newFolder = new Button(rb.getString("mainFileNewFolder"));
 		rename = new Button(rb.getString("mainFileRename"));
 		move = new Button(rb.getString("mainFileMove"));
 		copy = new Button(rb.getString("mainFileCopy"));
 		delete = new Button(rb.getString("mainFileDelete"));
-		fileCtrlBtns.addAll(sync, upload, download, newFolder, rename, move, copy, delete);
+		fileCtrlBtns.addAll(sync, upload, download, zip, unzip, newFolder, rename, move, copy, delete);
 		ctrlCenter.getChildren().addAll(new SeparatorX(true, 10, 48), fileCtrlBtns);
 		
 		// 设置
@@ -84,12 +86,11 @@ public class ViewMain extends Stage {
 		BorderPane leftPane = new BorderPane();
 		// 左侧导航
 		VBox navBtns = new VBox();
-		
 		photo = new NavButton(rb.getString("mainPhoto"));
 		document = new NavButton(rb.getString("mainDocument"));
 		backup = new NavButton(rb.getString("mainBackup"));
-		tomcatFile = new NavButton(rb.getString("mainShare"));
-		navBtns.getChildren().addAll(photo, document, backup, tomcatFile);
+		publicFile = new NavButton(rb.getString("mainShare"));
+		navBtns.getChildren().addAll(photo, document, backup, publicFile);
 		// 服务器状态面板
 		VBox states = new VBox();
 		cpu = new ServerState(rb.getString("mainStateCPU"), 80);
@@ -120,12 +121,15 @@ public class ViewMain extends Stage {
 		refresh = new Button();
 		refresh.setPrefWidth(26);
 		YeyuUtils.gui().setBackground(refresh, "net/imyeyu/netdisk/res/refresh.png", 16, 5, 5);
-		share = new Button();
-		share.setPrefWidth(26);
-		YeyuUtils.gui().setBackground(share, "net/imyeyu/netdisk/res/share.png", 16, 5, 5);
+		root = new Button();
+		root.setPrefWidth(26);
+		YeyuUtils.gui().setBackground(root, "net/imyeyu/netdisk/res/home.png", 16, 5, 5);
+		toPublic = new Button();
+		toPublic.setPrefWidth(26);
+		YeyuUtils.gui().setBackground(toPublic, "net/imyeyu/netdisk/res/share.png", 16, 5, 5);
 		pathCtrlBtns.setBorder(false);
 		pathCtrlBtns.setBorder(new BorderX("#B5B5B5", BorderX.SOLID, 1).right());
-		pathCtrlBtns.addAll(prev, next, parent, refresh, share);
+		pathCtrlBtns.addAll(prev, next, parent, refresh, root, toPublic);
 		pathCtrlPane.setBorder(new BorderX("#B5B5B5", BorderX.SOLID, 1).bottom());
 		// 路径
 		path = new TextField(File.separator);
@@ -145,12 +149,12 @@ public class ViewMain extends Stage {
 		pathCtrlPane.setRight(searchPane);
 		
 		// 文件列表
-		fileList = new FileList(rb);
+		fileList = new FileListTable(rb);
 		fileList.setPadding(Insets.EMPTY);
 		fileList.setStyle("-fx-background-insets: 0");
 		
 		// 提示信息栏
-		tipsPane = new TipsPane(rb);
+		tipsPane = new TipsPane();
 		tipsPane.setBorder(new BorderX("#B5B5B5", BorderX.SOLID, 1).top());
 		
 		filePane.setTop(pathCtrlPane);
@@ -164,13 +168,16 @@ public class ViewMain extends Stage {
 		main.setCenter(filePane);
 		// 主窗体
 		Scene scene = new Scene(main);
-		setTitle("夜雨云盘");
-		setMinWidth(780);
-		setMinHeight(460);
-		setWidth(780);
-		setHeight(460);
+		getIcons().add(new Image("net/imyeyu/netdisk/res/icon.png"));
+		setTitle("夜雨云盘 - 测试版本，数据传输未加盐（不安全），请不要传输大文件");
+		setMinWidth(860);
+		setMinHeight(520);
+		setWidth(860);
+		setHeight(520);
 		setScene(scene);
 		show();
+		
+		fileList.requestFocus();
 	}
 
 	public Button getOpen() {
@@ -180,6 +187,14 @@ public class ViewMain extends Stage {
 	public Button getPropertie() {
 		return propertie;
 	}
+	
+	public ButtonBar getFileCtrlBtns() {
+		return fileCtrlBtns;
+	}
+	
+	public Button getSync() {
+		return sync;
+	}
 
 	public Button getUpload() {
 		return upload;
@@ -187,6 +202,14 @@ public class ViewMain extends Stage {
 
 	public Button getDownload() {
 		return download;
+	}
+	
+	public Button getZip() {
+		return zip;
+	}
+	
+	public Button getUnZip() {
+		return unzip;
 	}
 
 	public Button getNewFolder() {
@@ -229,8 +252,8 @@ public class ViewMain extends Stage {
 		return backup;
 	}
 
-	public Button getTomcatFile() {
-		return tomcatFile;
+	public Button getPublicFile() {
+		return publicFile;
 	}
 
 	public Button getPrev() {
@@ -248,16 +271,20 @@ public class ViewMain extends Stage {
 	public Button getRefresh() {
 		return refresh;
 	}
-
-	public Button getShare() {
-		return share;
+	
+	public Button getRoot() {
+		return root;
+	}
+	
+	public Button getToPublic() {
+		return toPublic;
 	}
 
 	public Button getSearch() {
 		return search;
 	}
 
-	public FileList getFileList() {
+	public FileListTable getFileList() {
 		return fileList;
 	}
 

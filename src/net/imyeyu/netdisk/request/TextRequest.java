@@ -16,14 +16,14 @@ import net.imyeyu.netdisk.Entrance;
 import net.imyeyu.netdisk.bean.Request;
 import net.imyeyu.utils.YeyuUtils;
 
-public class PublicRequest extends Service<String> {
+public class TextRequest extends Service<String> {
 	
 	private String key, value;
 	private Socket socket;
 	private Map<String, Object> config = Entrance.getConfig();
 	private String ip, token; int port;
 
-	public PublicRequest(String key, String value) {
+	public TextRequest(String key, String value) {
 		this.key = key;
 		this.value = value;
 		ip = config.get("ip").toString();
@@ -51,9 +51,11 @@ public class PublicRequest extends Service<String> {
 
 					InputStream is = socket.getInputStream();
 					BufferedReader br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+					StringBuffer text = new StringBuffer();
 					while (!(result = flag = br.readLine()).equals("finish")) {
-						updateMessage(flag);
+						text.append(flag + "\r\n");
 					}
+					updateMessage(text.substring(0, text.length() - 2));
 					br.close();
 					os.flush();
 					os.close();

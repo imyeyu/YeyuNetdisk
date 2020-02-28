@@ -1,14 +1,18 @@
 package net.imyeyu.netdisk.dialog;
 
 import java.io.File;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.ResourceBundle;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.concurrent.Service;
+import javafx.concurrent.Task;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -25,18 +29,16 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import net.imyeyu.netdisk.Entrance;
 import net.imyeyu.netdisk.request.PublicRequest;
-import net.imyeyu.netdisk.util.FileTPService;
 import net.imyeyu.utils.gui.BorderX;
 
-public class FolderSelector extends Stage {
-	
+public class UnZip extends Stage {
 	private ResourceBundle rb = Entrance.getRb();
 	private SimpleBooleanProperty isFinish = new SimpleBooleanProperty(false);
 	
 	private TreeView<String> treeView;
 	private TreeItem<String> root;
 
-	public FolderSelector(String title, List<String> list, String flag) {
+	public UnZip(String title, String zip, String flag) {
 		
 		BorderPane main = new BorderPane();
 		Label header = new Label(rb.getString("fileSelectTypeFolder"));
@@ -52,12 +54,14 @@ public class FolderSelector extends Stage {
 		
 		HBox btnBox = new HBox();
 		Button confirm = new Button("确定");
+		Button skip = new Button("跳过");
+		skip.setDisable(true);
 		Button cancel = new Button("取消");
 		btnBox.setPadding(new Insets(8, 0, 0, 0));
 		btnBox.setBorder(new BorderX("#B5B5B5", BorderX.SOLID, 1).top());
 		btnBox.setSpacing(8);
 		btnBox.setAlignment(Pos.CENTER_RIGHT);
-		btnBox.getChildren().addAll(confirm, cancel);
+		btnBox.getChildren().addAll(confirm, skip, cancel);
 		
 		main.setBorder(new BorderX("#B5B5B5", BorderX.SOLID, 1).top());
 		main.setPadding(new Insets(12, 12, 8, 12));
@@ -66,7 +70,7 @@ public class FolderSelector extends Stage {
 		main.setBottom(btnBox);
 		
 		Scene scene = new Scene(main);
-		getIcons().add(new Image("net/imyeyu/netdisk/res/" + flag + ".png"));
+		getIcons().add(new Image("net/imyeyu/netdisk/res/7z.png"));
 		setScene(scene);
 		setTitle(title);
 		setMinWidth(280);
@@ -95,6 +99,7 @@ public class FolderSelector extends Stage {
 		confirm.setOnAction(event -> {
 			treeView.setDisable(true);
 			confirm.setDisable(true);
+			skip.setDisable(false);
 			cancel.setDisable(true);
 			
 			TreeItem<String> item = treeView.getSelectionModel().getSelectedItem();
@@ -104,7 +109,7 @@ public class FolderSelector extends Stage {
 				item = item.getParent();
 			}
 			toPath.insert(0, "\\");
-			FileTPService request = new FileTPService(toPath.toString(), list, flag);
+			UnZipService request = new UnZipService(zip, toPath.toString(), flag);
 			header.textProperty().bind(request.messageProperty());
 			request.valueProperty().addListener((obs, oldValue, newValue) -> {
 				if (newValue != null && newValue.equals("finish")) {
@@ -115,6 +120,7 @@ public class FolderSelector extends Stage {
 			request.start();
 		});
 		
+		skip.setOnAction(event -> close());
 		cancel.setOnAction(event -> close());
 	}
 	
@@ -146,5 +152,36 @@ public class FolderSelector extends Stage {
 	
 	public SimpleBooleanProperty isFinish() {
 		return isFinish;
+	}
+}
+
+class UnZipService extends Service<String> {
+
+	private String zip, path, flag;
+	
+	public UnZipService(String zip, String path, String flag) {
+		this.zip = zip;
+		this.path = path;
+		this.flag = flag;
+	}
+	
+	protected Task<String> createTask() {
+		
+		return new Task<String>() {
+			protected String call() throws Exception {
+				Map<String, Object> map = new HashMap<>();
+				map.put("zip", zip);
+				map.put("path", path);
+				
+				updateMessage("正在处理...");
+				
+				PublicRequest request = new PublicRequest(flag, new Gson().toJson(map).toString());
+				request.valueProperty().addListener((obs, oldValue, newValue) -> {
+					updateValue(newValue);
+				});
+				request.start();
+				return null;
+			}
+		};
 	}
 }
