@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.ResourceBundle;
 
 import com.drew.imaging.ImageMetadataReader;
 import com.drew.imaging.ImageProcessingException;
@@ -21,6 +20,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.control.Button;
@@ -40,6 +40,7 @@ import net.imyeyu.netdisk.ui.NavButton;
 import net.imyeyu.netdisk.ui.Photo;
 import net.imyeyu.netdisk.ui.PhotoList;
 import net.imyeyu.netdisk.view.ViewPhotoManager;
+import net.imyeyu.utils.ResourceBundleX;
 
 /**
  * 照片管理器
@@ -49,11 +50,13 @@ import net.imyeyu.netdisk.view.ViewPhotoManager;
  */
 public class PhotoManager extends ViewPhotoManager {
 	
-	private ResourceBundle rb = Entrance.getRb();
+	private ResourceBundleX rbx = Entrance.getRb();
 	private Map<String, Object> config = Entrance.getConfig();
 	
+	private int count = 0;
 	private double defaultWidth = -1;
 	private String root, nowYear, sep = File.separator;
+	private SimpleIntegerProperty selected = new SimpleIntegerProperty(0);
 	
 	private boolean isCompressImg = false;
 	private JsonArray date;
@@ -91,31 +94,39 @@ public class PhotoManager extends ViewPhotoManager {
 			public void handle(ActionEvent event) {
 				Button btn = (Button) event.getSource();
 				nowYear = btn.getText();
-				requestPhotoList(nowYear);
+				getPhotoList(nowYear);
 			}
 		};
 		// 新增年份
 		getAddYear().setOnAction(event -> {
-			AddYear addYear = new AddYear();
+			List<String> list = new ArrayList<>();
+			JsonObject jo;
+			for (int i = 0; i < date.size(); i++) {
+				jo = date.get(i).getAsJsonObject();
+				list.add(jo.get("year").getAsString());
+			}
+			AddYear addYear = new AddYear(list);
 			addYear.isFinish().addListener((obs, oldValue, newValue) -> {
-				if (newValue) requestDateList();
+				if (newValue) getYearList();
 			});
 		});
 		// 上传
 		getUpload().setOnAction(event -> {
 			boolean isAutoDate = getAutoDate().getSelectionModel().isSelected(0);
 			if (nowYear == null && !isAutoDate) {
-				new Alert("错误", "非自动归档需要选择年份再上传");
+				new Alert(rbx.def("error"), rbx.def("photoNotAutoArchiving"));
 				return;
 			}
 			FileChooser fileChooser = new FileChooser();
 			fileChooser.getExtensionFilters().addAll( new FileChooser.ExtensionFilter("Images File", "*.jpg;*.gif;*.bmp;*.png"));
 			fileChooser.setInitialDirectory(new File(config.get("defaultUploadFolder").toString()));
-			fileChooser.setTitle(rb.getString("fileSelectTypeFile"));
+			fileChooser.setTitle(rbx.def("fileSelectTypeFile"));
 			List<File> list = fileChooser.showOpenMultipleDialog(null);
+			boolean isEn = rbx.def("language").toString().equals("English");
 			if (list != null && 0 < list.size()) {
 				config.put("defaultUploadFolder", list.get(0).getParent());
-				String year = "未归档", month = "未归档", toPath;
+				String year, month, toPath;
+				year = month = rbx.def("photoNotAutomatic");
 				File file;
 				if (isAutoDate) { // 自动归档
 					for (int i = 0; i < list.size(); i++) {
@@ -131,7 +142,12 @@ public class PhotoManager extends ViewPhotoManager {
 										dateFormat = new SimpleDateFormat("yyyy");
 										year = dateFormat.format(date);
 										dateFormat = new SimpleDateFormat("M");
-										month = dateFormat.format(date);
+										if (isEn) {
+											String[] months = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dev"};
+											month = months[Integer.valueOf(dateFormat.format(date)) - 1];
+										} else {
+											month = dateFormat.format(date);
+										}
 										break out;
 									}
 								}
@@ -152,7 +168,7 @@ public class PhotoManager extends ViewPhotoManager {
 						upload.add(new UploadFile(file.getName(), file.getAbsolutePath(), toPath, file.length()));
 					}
 				}
-				new Alert("提示", "已添加 " + list.size() + " 张照片到上传列表");
+				new Alert(rbx.def("tips"), rbx.r("add") + list.size() + rbx.l("photoUpload"));
 			}
 		});
 		// 下载
@@ -188,7 +204,7 @@ public class PhotoManager extends ViewPhotoManager {
 							item.getKey().toggleSelect();
 						}
 					}
-					if (0 < count) new Alert("提示", "已添加 " + count + " 张照片到下载列表");
+					if (0 < count) new Alert(rbx.def("tips"), rbx.r("add") + count + rbx.l("photoDownload"));
 				}
 			}
 		});
@@ -206,10 +222,10 @@ public class PhotoManager extends ViewPhotoManager {
 					}
 					DeleteFile deleteFile = new DeleteFile(fileList);
 					deleteFile.isFinish().addListener((tmp, oldValue, newValue) -> {
-						PublicRequest request = requestDateList();
+						PublicRequest request = getYearList();
 						request.valueProperty().addListener((obsx, oldValuex, newValuex) -> {
 							if (newValuex.equals("finish") && !nowYear.equals("")) {
-								requestPhotoList(nowYear);
+								getPhotoList(nowYear);
 							}
 						});
 					});
@@ -223,6 +239,7 @@ public class PhotoManager extends ViewPhotoManager {
 				for (Map.Entry<Photo, String> item : map.entrySet()) {
 					if (!item.getKey().isSelect()) item.getKey().toggleSelect();
 				}
+				selected.set(map.size());
 			}
 		});
 		// 反选
@@ -232,6 +249,7 @@ public class PhotoManager extends ViewPhotoManager {
 				for (Map.Entry<Photo, String> item : map.entrySet()) {
 					item.getKey().toggleSelect();
 				}
+				selected.set(map.size() - selected.get());
 			}
 		});
 		// 取消选择
@@ -242,14 +260,19 @@ public class PhotoManager extends ViewPhotoManager {
 					if (item.getKey().isSelect()) item.getKey().toggleSelect();
 				}
 				getInfoTable().clear();
+				selected.set(0);
 			}
 		});
 		// 刷新
 		getRefresh().setOnAction(event -> {
-			PublicRequest request = requestDateList();
+			PublicRequest request = getYearList();
 			request.valueProperty().addListener((obsx, oldValuex, newValuex) -> {
-				if (newValuex.equals("finish") && !nowYear.equals("")) {
-					requestPhotoList(nowYear);
+				if (nowYear != null) {
+					if (newValuex.equals("finish")) {
+						getPhotoList(nowYear);
+					}
+				} else {
+					getDateList();
 				}
 			});
 		});
@@ -262,17 +285,25 @@ public class PhotoManager extends ViewPhotoManager {
 						fileList.add(root + sep + imgList.getValue());
 					}
 				}
-				FolderSelector selector = new FolderSelector("移动到", fileList, "move");
+				FolderSelector selector = new FolderSelector(rbx.def("mainFileMoveTo"), fileList, "move");
 				selector.isFinish().addListener((obs, oldValue, newValue) -> {
 					if (newValue) {
-						PublicRequest request = requestDateList();
+						PublicRequest request = getYearList();
 						request.valueProperty().addListener((obsx, oldValuex, newValuex) -> {
 							if (newValuex.equals("finish") && !nowYear.equals("")) {
-								requestPhotoList(nowYear);
+								getPhotoList(nowYear);
 							}
 						});
 					}
 				});
+			}
+		});
+		// 列表选择状态
+		selected.addListener((obs, oldValue, newValue) -> {
+			if (newValue.intValue() != 0) {
+				getSelected().setText(newValue + rbx.l("photoSelected"));
+			} else {
+				getSelected().setText("");
 			}
 		});
 		// 关闭事件
@@ -280,11 +311,11 @@ public class PhotoManager extends ViewPhotoManager {
 			if (list != null) list.shutdown();
 		});
 		
-		requestDateList();
+		getYearList();
 	}
 	
 	// 获取日期列表
-	private PublicRequest requestDateList() {
+	private PublicRequest getYearList() {
 		PublicRequest request = new PublicRequest("getPhotoDateList", "");
 		request.messageProperty().addListener((obs, oldValue, newValue) -> {
 			if (!newValue.equals("")) {
@@ -292,12 +323,16 @@ public class PhotoManager extends ViewPhotoManager {
 				date = (JsonArray) jp.parse(newValue);
 				NavButton dateBtn;
 				JsonObject jo;
-				getDateList().getChildren().clear();
-				for (int i = 0; i < date.size(); i++) {
-					jo = date.get(i).getAsJsonObject();
-					dateBtn = new NavButton(jo.get("year").getAsString());
-					dateBtn.setOnAction(clickDateEvent);
-					getDateList().getChildren().add(dateBtn);
+				if (0 < date.size()) {
+					getDateList().getChildren().clear();
+					for (int i = 0; i < date.size(); i++) {
+						jo = date.get(i).getAsJsonObject();
+						dateBtn = new NavButton(jo.get("year").getAsString());
+						dateBtn.setOnAction(clickDateEvent);
+						getDateList().getChildren().add(dateBtn);
+					}
+				} else {
+					((NavButton) getDateList().getChildren().get(0)).setText(rbx.def("nullData"));
 				}
 			}
 		});
@@ -305,18 +340,26 @@ public class PhotoManager extends ViewPhotoManager {
 		return request;
 	}
 	// 获取照片列表
-	private void requestPhotoList(String year) {
+	private void getPhotoList(String year) {
 		if (list != null) list.shutdown();
 		JsonObject jo;
 		for (int i = 0; i < date.size(); i++) {
 			jo = date.get(i).getAsJsonObject();
 			if (jo.get("year").getAsString().equals(year)) {
-				list = new PhotoList(jo.get("year").getAsString(), jo.get("months").getAsJsonArray(), isCompressImg);
+				JsonArray ja = jo.get("months").getAsJsonArray();
+				list = new PhotoList(jo.get("year").getAsString(), ja, isCompressImg);
+				count = list.getRequestList().size();
+				if (count != 0) {
+					getCount().setText(rbx.r("photoAll") + count + rbx.l("photos"));
+				} else {
+					getCount().setText(rbx.def("photoNone", year));
+				}
 				getSpList().setContent(list);
 				// 绑定加载进度条宽度
 				list.getPb().prefWidthProperty().bind(getSpList().widthProperty());
 				// 选择照片事件
 				selectPhotoEvent();
+				// 出现滚动条事件
 				list.heightProperty().addListener((obs, oldValue, newValue) -> {
 					isShowListScroll.set(getSpList().getHeight() < newValue.doubleValue());
 					if (isShowListScroll.get()) {
@@ -338,10 +381,14 @@ public class PhotoManager extends ViewPhotoManager {
 				if (event.getClickCount() == 2) {
 					new Img(root + sep + imgList.getValue());
 					imgList.getKey().toggleSelect();
+					selected.set(selected.get() - 1);
 				} else {
 					imgList.getKey().toggleSelect();
 					if (imgList.getKey().isSelect()) {
 						getPhotoInfo(imgList.getValue());
+						selected.set(selected.get() + 1);
+					} else {
+						selected.set(selected.get() - 1);
 					}
 				}
 			});

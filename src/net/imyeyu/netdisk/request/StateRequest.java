@@ -1,7 +1,6 @@
 package net.imyeyu.netdisk.request;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -37,34 +36,29 @@ public class StateRequest extends Service<String> {
 	protected Task<String> createTask() {
 		return new Task<String>() {
 			protected String call() throws Exception {
-				try {
-					socket = new Socket();
-					socket.connect(new InetSocketAddress(ip, port), 8000);
-					if (socket.isConnected()) {
-						// 验证
-						Request request = new Request();
-						request.setToken(token);
-						OutputStream os = socket.getOutputStream();
-						os.write((new Gson().toJson(request) + "\r\n").getBytes("UTF-8"));
-						
-						InputStream is = socket.getInputStream();
-						BufferedReader br;
-						String result;
-						while (!isShutdown) {
-							br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
-							result = br.readLine();
-							if (!result.equals("null")) {
-								updateValue(result);
-							} else {
-								Thread.sleep(200);
-							}
+				socket = new Socket();
+				socket.connect(new InetSocketAddress(ip, port), 5000);
+				if (socket.isConnected()) {
+					Request request = new Request();
+					request.setToken(token);
+					OutputStream os = socket.getOutputStream();
+					os.write((new Gson().toJson(request) + "\r\n").getBytes("UTF-8"));
+					
+					InputStream is = socket.getInputStream();
+					BufferedReader br;
+					String result;
+					while (!isShutdown) {
+						br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+						result = br.readLine();
+						if (!result.equals("null")) {
+							updateValue(result);
+						} else {
+							Thread.sleep(200);
 						}
-						socket.getOutputStream().close();
-						socket.getInputStream().close();
-						socket.close();
 					}
-				} catch (IOException e) {
-					// 中断，直接把包丢了
+					is.close();
+					os.close();
+					socket.close();
 				}
 				return null;
 			}

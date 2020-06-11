@@ -1,5 +1,7 @@
 package net.imyeyu.netdisk.core;
 
+import java.applet.Applet;
+import java.applet.AudioClip;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -21,8 +23,10 @@ import javafx.collections.FXCollections;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import net.imyeyu.netdisk.Entrance;
+import net.imyeyu.netdisk.bean.IOHistory;
 import net.imyeyu.netdisk.bean.Request;
 import net.imyeyu.netdisk.bean.UploadFile;
+import net.imyeyu.netdisk.ctrl.Main;
 import net.imyeyu.utils.YeyuUtils;
 
 public class Upload extends Service<Double> {
@@ -37,9 +41,12 @@ public class Upload extends Service<Double> {
 	private Map<String, Object> config = Entrance.getConfig();
 	private String ip, token; int port;
 	private double transpeed = 0;
+	private boolean isUploading = false;
+	private AudioClip ac;
 
 	public Upload() {
 		list.set(FXCollections.observableArrayList());
+		config = Entrance.getConfig();
 		ip = config.get("ip").toString();
 		port = Integer.valueOf(config.get("portUpload").toString());
 		if (!Boolean.valueOf(config.get("eToken").toString())) {
@@ -52,11 +59,14 @@ public class Upload extends Service<Double> {
 	protected Task<Double> createTask() {
 		return new Task<Double>() {
 			protected Double call() throws Exception {
+				ac = Applet.newAudioClip(this.getClass().getClassLoader().getResource("net/imyeyu/netdisk/res/finish.wav"));
 				Gson gson = new Gson();
 				Socket socket = null;
 				while (!isShutdown) {
-					config = Entrance.getConfig();
+					// 执行传输
 					for (int i = 0; i < list.size(); i++) {
+						isUploading = Boolean.valueOf(config.get("sound").toString());
+						
 						Thread.sleep(500);
 						if (socket != null && socket.isConnected()) {
 							socket.close();
@@ -85,7 +95,6 @@ public class Upload extends Service<Double> {
 								while ((length = fis.read(bytes, 0, bytes.length)) != -1) {
 									dos.write(bytes, 0, length);
 									dos.flush();
-									Thread.sleep(10); // 本地测试限速
 									progress += length;
 									transpeed += length;
 									updateValue(progress);
@@ -94,9 +103,14 @@ public class Upload extends Service<Double> {
 								if (fis != null) fis.close();
 								if (dos != null) dos.close();
 								finish.setValue(!finish.getValue());
-								updateMessage("finish" + i);
+								Main.getIoHistories().add(new IOHistory(list.get(i).getName(), list.get(i).getToPath(), false));
+								updateMessage(String.valueOf(Math.random()));
 							}
 						}
+					}
+					if (isUploading && Boolean.valueOf(config.get("sound").toString())) {
+						ac.play();
+						isUploading = false;
 					}
 					list.get().clear();
 					Thread.sleep(3000);
@@ -107,19 +121,21 @@ public class Upload extends Service<Double> {
 	}
 
 	private void request(Object data) throws IOException {
-		if (os != null) os.write((data.toString() + "\r\n").getBytes());
+		if (os != null) os.write((data.toString() + "\r\n").getBytes("UTF-8"));
 	}
 
 	public void add(List<File> files, String path) {
 		UploadFile file;
 		for (int i = 0; i < files.size(); i++) {
-			file = new UploadFile(
-				files.get(i).getName(),
-				files.get(i).getAbsolutePath(),
-				path,
-				files.get(i).length()
-			);
-			list.get().add(file);
+			if (files.get(i).isFile()) {
+				file = new UploadFile(
+					files.get(i).getName(),
+					files.get(i).getAbsolutePath(),
+					path,
+					files.get(i).length()
+				);
+				list.get().add(file);
+			}
 		}
 	}
 	

@@ -1,30 +1,30 @@
-.progress-bar {
+#main .progress-bar {
 	-fx-indeterminate-bar-flip: true;
 	-fx-indeterminate-bar-length: 60;
 	-fx-indeterminate-bar-escape: true;
 	-fx-indeterminate-bar-animation-time: 2;
 }
 
-.progress-bar > .bar {
+#main .progress-bar > .bar {
 	-fx-padding: 0;
 	-fx-background-color: #B6DEEC;
 	-fx-background-insets: 1;
 	-fx-background-radius: 0;
 }
 
-.progress-bar:indeterminate > .bar {
+#main .progress-bar:indeterminate > .bar {
 	-fx-background-color: linear-gradient(to left, transparent, -fx-accent);
 }
 
-.list-cell:selected {
+#main .list-cell:selected {
 	-fx-background-color: #E4E4E4;
 }
 
-.list-cell:selected Label {
+#main .list-cell:selected Label {
 	-fx-text-fill: #323232;
 }
 
-.list-cell Button {
+#main .list-cell Button {
 	-fx-cursor: hand;
 	-fx-padding: 0;
 }

@@ -30,7 +30,7 @@ import net.imyeyu.netdisk.core.Upload;
 import net.imyeyu.netdisk.util.FileFormat;
 import net.imyeyu.utils.YeyuUtils;
 
-public class IOList extends ListView<IOCell>{
+public class IOList extends ListView<IOCell> {
 	
 	private DecimalFormat format = new DecimalFormat("#,###");
 	private AnchorPane main;
@@ -39,8 +39,8 @@ public class IOList extends ListView<IOCell>{
 	private ImageView icon;
 	private Label name, size;
 	
-	public IOList(ObservableList<IOCell> list) {
-		super(list);
+	public IOList(ObservableList<IOCell> rootList) {
+		super(rootList);
 		Background bgCancel = new Background(new BackgroundImage(
 			new Image("net/imyeyu/netdisk/res/cancel.png"),
 			BackgroundRepeat.NO_REPEAT,
@@ -52,7 +52,6 @@ public class IOList extends ListView<IOCell>{
 		setStyle("-fx-background-insets: 0");
 		setCellFactory(new Callback<ListView<IOCell>, ListCell<IOCell>>() {
 			
-			private ObservableList<IOCell> obsList = list;
 			private Button cancel;
 			
 			public ListCell<IOCell> call(ListView<IOCell> param) {
@@ -96,7 +95,7 @@ public class IOList extends ListView<IOCell>{
 								SimpleListProperty<UploadFile> uplaod = Upload.getListProperty();
 								for (int i = 0; i < uplaod.size(); i++) {
 									if (item.getName().equals(uplaod.get(i).getName())) {
-										obsList.remove(i);
+										rootList.remove(i);
 										Upload.getListProperty().remove(i);
 										return;
 									}
@@ -104,7 +103,7 @@ public class IOList extends ListView<IOCell>{
 								SimpleListProperty<DownloadFile> download = Download.getListProperty();
 								for (int i = 0; i < download.size(); i++) {
 									if (item.getName().equals(download.get(i).getName())) {
-										obsList.remove(i);
+										rootList.remove(i);
 										Download.getListProperty().remove(i);
 										return;
 									}

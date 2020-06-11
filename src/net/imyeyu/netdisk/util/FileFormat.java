@@ -47,6 +47,10 @@ public class FileFormat {
 				return false;
 		}
 	}
+	
+	public static boolean isMP4(String format) {
+		return format.toLowerCase().equals("mp4");
+	}
 
 	public static Image getImage(String format) {
 		String icon;

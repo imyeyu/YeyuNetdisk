@@ -24,6 +24,10 @@ public class FileCell {
 	public String getName() {
 		return name.get();
 	}
+	
+	public String getDisplayName() {
+		return name.get().substring(name.get().indexOf(".") + 1);
+	}
 
 	public void setName(String name) {
 		this.name.set(name);

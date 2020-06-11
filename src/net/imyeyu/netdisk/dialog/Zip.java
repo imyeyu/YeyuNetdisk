@@ -13,24 +13,30 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import net.imyeyu.netdisk.Entrance;
 import net.imyeyu.netdisk.bean.FileCell;
 import net.imyeyu.netdisk.request.PublicRequest;
+import net.imyeyu.utils.ResourceBundleX;
 import net.imyeyu.utils.gui.BorderX;
 
 public class Zip extends Stage {
 	
-//	private ResourceBundle rb;
+	private ResourceBundleX rbx = Entrance.getRb();
 	
 	private Label title, tips;
-	private String path;
-	private TextField name;
-	private VBox content;
 	private Button confirm, skip, cancel;
+	private String path;
+	private boolean isFail = false;
+	
+	private VBox content;
+	private TextField name;
 	private ObservableList<FileCell> list;
 	private SimpleBooleanProperty isFinish = new SimpleBooleanProperty(false);
 
@@ -40,7 +46,7 @@ public class Zip extends Stage {
 		
 		BorderPane main = new BorderPane();
 		content = new VBox();
-		title = new Label("请输入压缩包名称：");
+		title = new Label(rbx.def("enterZipName"));
 		name = new TextField();
 		tips = new Label();
 		content.setSpacing(8);
@@ -48,10 +54,11 @@ public class Zip extends Stage {
 		content.getChildren().addAll(title, name);
 		
 		HBox btnBox = new HBox();
-		confirm = new Button("确认");
-		skip = new Button("跳过");
+		confirm = new Button(rbx.def("confirm"));
+		confirm.setDisable(true);
+		skip = new Button(rbx.def("skip"));
 		skip.setDisable(true);
-		cancel = new Button("取消");
+		cancel = new Button(rbx.def("cancel"));
 		btnBox.setPadding(new Insets(6, 12, 6, 12));
 		btnBox.setSpacing(14);
 		btnBox.setAlignment(Pos.CENTER);
@@ -62,8 +69,9 @@ public class Zip extends Stage {
 		main.setBottom(btnBox);
 		
 		Scene scene = new Scene(main);
+		getIcons().add(new Image("net/imyeyu/netdisk/res/7z.png"));
 		setScene(scene);
-		setTitle("压缩文件");
+		setTitle(rbx.def("zipFile"));
 		setWidth(260);
 		setHeight(140);
 		setResizable(false);
@@ -78,12 +86,15 @@ public class Zip extends Stage {
 		skip.setOnAction(event -> close());
 		cancel.setOnAction(event -> close());
 		
-		name.textProperty().addListener((obs, oldValue, newValue) -> {
-			if (newValue.equals("")) confirm.setDisable(true);
+		main.setOnKeyPressed(event -> {
+			if (event.getCode().equals(KeyCode.ENTER)) confirm();
 		});
-		name.setOnKeyPressed(evnet -> {
-			confirm.setDisable(false);
-			skip.setDisable(true);
+		name.setOnKeyReleased(evnet -> {
+			if (name.getText().equals("")) {
+				confirm.setDisable(true);
+			} else {
+				confirm.setDisable(false);
+			}
 			cancel.setDisable(false);
 			content.getChildren().remove(tips);
 			setHeight(140);
@@ -93,7 +104,7 @@ public class Zip extends Stage {
 	private void confirm() {
 		name.setDisable(true);
 		confirm.setDisable(true);
-		skip.setDisable(false);
+		cancel.setDisable(true);
 
 		content.getChildren().add(tips);
 		setHeight(170);
@@ -103,7 +114,7 @@ public class Zip extends Stage {
 		for (int i = 0; i < list.size(); i++) {
 			fileName = list.get(i).getName();
 			if (name.getText().equals(fileName.substring(fileName.indexOf(".") + 1))) {
-				tips.setText("该命名对象已存在当前目录");
+				tips.setText(rbx.def("renameExist"));
 				return;
 			}
 		}
@@ -119,11 +130,20 @@ public class Zip extends Stage {
 		ZipFile file = new ZipFile(name.getText(), path, zipFiles);
 		PublicRequest request = new PublicRequest("zip", new Gson().toJson(file));
 		request.messageProperty().addListener((obs, oldValue, newValue) -> {
-			System.out.println(newValue);
+			if (newValue != null && newValue.equals("fail")) {
+				isFail = true;
+				title.setText(rbx.def("zipFail"));
+				name.setDisable(true);
+				confirm.setDisable(true);
+				skip.setDisable(true);
+				cancel.setDisable(false);
+			}
 		});
 		request.valueProperty().addListener((list, oldValue, newValue) -> {
-			if (newValue != null && newValue.equals("finish")) isFinish.set(true);
-			close();
+			if (!isFail && newValue.equals("finish")) {
+				isFinish.set(true);
+				close();
+			}
 		});
 		request.start();
 	}

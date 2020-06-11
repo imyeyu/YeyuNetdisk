@@ -10,10 +10,10 @@ public class UploadFile {
 	/**
 	 * 文件上传对象
 	 * 
-	 * @param name 文件名
+	 * @param name     文件名
 	 * @param fromPath 本地路径
-	 * @param toPath 目标路径
-	 * @param size 文件大小
+	 * @param toPath   目标路径
+	 * @param size     文件大小
 	 */
 	public UploadFile(String name, String fromPath, String toPath, long size) {
 		this.name = name;

@@ -1,7 +1,5 @@
 package net.imyeyu.netdisk.ui;
 
-import java.util.ResourceBundle;
-
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
 import javafx.scene.control.SelectionMode;
@@ -14,15 +12,17 @@ import javafx.scene.layout.HBox;
 import javafx.util.Callback;
 import net.imyeyu.netdisk.bean.FileCell;
 import net.imyeyu.netdisk.util.FileFormat;
+import net.imyeyu.utils.ResourceBundleX;
 
 public class FileListTable extends TableView<FileCell> {
 	
+	private TableColumn<FileCell, String> colName;
 	
-	public FileListTable(ResourceBundle rb) {
-		TableColumn<FileCell, String> colName = new TableColumn<FileCell, String>(rb.getString("mainFileName"));
-		TableColumn<FileCell, String> colDate = new TableColumn<FileCell, String>(rb.getString("mainFileDate"));
-		TableColumn<FileCell, String> colSize = new TableColumn<FileCell, String>(rb.getString("mainFileSize"));
-		colName.setPrefWidth(440);
+	public FileListTable(ResourceBundleX rbx) {
+		colName = new TableColumn<FileCell, String>(rbx.def("mainFileName"));
+		TableColumn<FileCell, String> colDate = new TableColumn<FileCell, String>(rbx.def("mainFileDate"));
+		TableColumn<FileCell, String> colSize = new TableColumn<FileCell, String>(rbx.def("mainFileSize"));
+		colName.setPrefWidth(450);
 		colDate.setPrefWidth(140);
 		colSize.setPrefWidth(100);
 
@@ -40,7 +40,7 @@ public class FileListTable extends TableView<FileCell> {
 							} else {
 								img = new ImageView(FileFormat.getImage(item.substring(item.lastIndexOf(".") + 1)));
 							}
-							Label label = new Label(item.substring(item.indexOf(".") + 1));
+							Label label = new Label(item.substring(item.indexOf(".") + 1)); 
 							label.setPadding(new Insets(0, 0, 0, 4));
 							box.getChildren().addAll(img, label);
 							this.setGraphic(box);
@@ -61,5 +61,9 @@ public class FileListTable extends TableView<FileCell> {
 		getColumns().add(colSize);
 		
 		getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+	}
+	
+	public TableColumn<FileCell, String> getColName() {
+		return colName;
 	}
 }

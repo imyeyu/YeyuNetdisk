@@ -11,17 +11,22 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.scene.control.Label;
+import javafx.scene.image.Image;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.text.Text;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import net.imyeyu.netdisk.Entrance;
 import net.imyeyu.netdisk.request.PublicRequest;
+import net.imyeyu.utils.ResourceBundleX;
 import net.imyeyu.utils.gui.BorderX;
 
 public class DeleteFile extends Stage {
 	
-	private Label content;
+	private ResourceBundleX rbx = Entrance.getRb();
+	
+	private Text content;
 	private Button confirm, cancel;
 	private List<String> list;
 	private SimpleBooleanProperty isFinish = new SimpleBooleanProperty(false);
@@ -30,12 +35,12 @@ public class DeleteFile extends Stage {
 		this.list = list;
 		
 		BorderPane main = new BorderPane();
-		content = new Label("确认永久删除此对象吗？");
-		content.setAlignment(Pos.CENTER);
+		content = new Text(rbx.def("deleteFileTips"));
+		content.setWrappingWidth(210);
 		
 		HBox btnBox = new HBox();
-		confirm = new Button("确认");
-		cancel = new Button("取消");
+		confirm = new Button(rbx.def("confirm"));
+		cancel = new Button(rbx.def("cancel"));
 		btnBox.setPadding(new Insets(6, 12, 6, 12));
 		btnBox.setSpacing(14);
 		btnBox.setAlignment(Pos.CENTER);
@@ -46,13 +51,16 @@ public class DeleteFile extends Stage {
 		main.setBottom(btnBox);
 		
 		Scene scene = new Scene(main);
+		getIcons().add(new Image("net/imyeyu/netdisk/res/warn.png"));
 		setScene(scene);
-		setTitle("警告");
+		setTitle(rbx.def("warn"));
 		setWidth(260);
 		setHeight(120);
 		setResizable(false);
 		initModality(Modality.APPLICATION_MODAL);
 		show();
+		
+		cancel.requestFocus();
 
 		confirm.setFocusTraversable(false);
 		cancel.setFocusTraversable(false);
@@ -86,6 +94,8 @@ public class DeleteFile extends Stage {
 
 class DeleteService extends Service<String> {
 	
+	private ResourceBundleX rbx = Entrance.getRb();
+	
 	private List<String> list;
 	
 	public DeleteService(List<String> list) {
@@ -98,7 +108,7 @@ class DeleteService extends Service<String> {
 			protected String call() throws Exception {
 				PublicRequest request = new PublicRequest("delete", new Gson().toJson(list).toString());
 				request.messageProperty().addListener((obs, oldValue, newValue) -> {
-					if (newValue != null) updateMessage("正在删除..." + newValue + " / " + list.size());
+					if (newValue != null) updateMessage(rbx.def("deleting") + newValue + " / " + list.size());
 				});
 				request.valueProperty().addListener((obs, oldValue, newValue) -> {
 					if (newValue != null) updateValue("finish");

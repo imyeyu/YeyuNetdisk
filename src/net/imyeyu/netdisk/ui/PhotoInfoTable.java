@@ -14,30 +14,34 @@ import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.RowConstraints;
 import javafx.scene.paint.Color;
+import net.imyeyu.netdisk.Entrance;
 import net.imyeyu.netdisk.bean.PhotoInfo;
+import net.imyeyu.utils.ResourceBundleX;
 import net.imyeyu.utils.YeyuUtils;
 import net.imyeyu.utils.gui.ToolTipsX;
 
 public class PhotoInfoTable extends GridPane {
 	
+	private ResourceBundleX rbx = Entrance.getRb();
+	
 	private String[] labels = {
-		"文件名",
-		"位置",
-		"文件大小",
-		"宽",
-		"高",
-		"拍摄日期",
-		"相机厂商",
-		"相机型号",
-		"系统",
-		"光圈",
-		"曝光时间",
-		"ISO 速度",
-		"焦距",
-		"经度",
-		"纬度",
-		"海拔",
-		"城市"
+		rbx.def("fileName"),
+		rbx.def("pos"),
+		rbx.def("fileSize"),
+		rbx.def("width"),
+		rbx.def("height"),
+		rbx.def("date"),
+		rbx.def("make"),
+		rbx.def("camera"),
+		rbx.def("os"),
+		rbx.def("aperture"),
+		rbx.def("toe"),
+		rbx.def("iso"),
+		rbx.def("focalLength"),
+		rbx.def("lng"),
+		rbx.def("lat"),
+		rbx.def("alt"),
+		rbx.def("photoGPS")
 	};
 	private Label[] label = new Label[labels.length];
 	private Label[] data = new Label[labels.length];
@@ -81,12 +85,12 @@ public class PhotoInfoTable extends GridPane {
 		data[i].setTooltip(new ToolTipsX(info.getOs()));
 		data[i++].setText(info.getOs());
 		data[i++].setText(info.getAperture());
-		data[i++].setText(info.getToe() + " 秒");
+		data[i++].setText(info.getToe() + rbx.l("second"));
 		data[i++].setText(info.getIso());
-		data[i++].setText(info.getFocalLength() + " 毫米");
+		data[i++].setText(info.getFocalLength() + rbx.l("millimeter"));
 		data[i++].setText(info.getLng());
 		data[i++].setText(info.getLat());
-		data[i++].setText(info.getAlt().replaceAll("metres", " 米"));
+		data[i++].setText(info.getAlt().replaceAll("metres", rbx.l("meters")));
 		data[i++].setText("");
 		
 		// 根据经纬度获取地理位置

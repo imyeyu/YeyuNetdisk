@@ -2,8 +2,11 @@ package net.imyeyu.netdisk.ctrl;
 
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Cursor;
+import javafx.scene.effect.DropShadow;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.ScrollEvent;
+import javafx.scene.layout.Background;
+import javafx.scene.paint.Color;
 import javafx.stage.Screen;
 import net.imyeyu.netdisk.request.ImgRequest;
 import net.imyeyu.netdisk.view.ViewImg;
@@ -15,6 +18,13 @@ public class Img extends ViewImg {
 
 	public Img(String path) {
 		super(path);
+		
+		DropShadow dropshadow = new DropShadow();
+		dropshadow.setRadius(5);
+		dropshadow.setOffsetX(0);
+		dropshadow.setOffsetY(0);
+		dropshadow.setSpread(.05);
+		dropshadow.setColor(Color.valueOf("#000000DD"));
 		
 		// 点击图像
 		getMain().setOnMousePressed(event -> {
@@ -36,70 +46,90 @@ public class Img extends ViewImg {
 		});
 		// 滚轮事件
 		getMain().addEventFilter(ScrollEvent.SCROLL, event -> {
-			if (!(getWidth() + event.getDeltaY() < 260)) {
-				if (getHeight() < getWidth()) {
+			if (!(getWidth() + event.getDeltaY() < 16)) {
+				if (getImg().getFitHeight() < getImg().getFitWidth()) {
 					setX(getX() + -event.getDeltaY() / 2);
-					setY(getY() + -event.getDeltaY() / 2 * scale);
+					setY(getY() + -(event.getDeltaY() / 2 * scale));
 					setWidth(getWidth() + event.getDeltaY());
 					setHeight(getHeight() + event.getDeltaY() * scale);
-					getImg().setFitWidth(getWidth() + 1);
-					getImg().setFitHeight(getHeight() + 1);
+					getImg().setFitWidth(getWidth() - 10);
+					getImg().setFitHeight(getHeight() - 10);
 				} else {
-					setX(getX() + -event.getDeltaY() / 2 * scale);
+					setX(getX() + -(event.getDeltaY() / 2 * scale));
 					setY(getY() + -event.getDeltaY() / 2);
 					setWidth(getWidth() + event.getDeltaY() * scale);
 					setHeight(getHeight() + event.getDeltaY());
-					getImg().setFitWidth(getWidth() + 1);
-					getImg().setFitHeight(getHeight() + 1);
+					getImg().setFitWidth(getWidth() - 10);
+					getImg().setFitHeight(getHeight() - 10);
 				}
 			}
 		});
 		// 获取图片
 		ImgRequest request = new ImgRequest("getImg", path, true);
+		getPB().progressProperty().bind(request.progressProperty());
+		getOnload().textProperty().bind(request.messageProperty());
 		request.valueProperty().addListener((obs, oldImg, newImg) -> {
 			if (newImg != null) {
 				ImageView img = new ImageView(newImg);
 				setImg(img);
-				setWidth(newImg.getWidth());
-				setHeight(newImg.getHeight());
-				if (newImg.getHeight() < newImg.getWidth()) { // 横向
-					scale = newImg.getHeight() / newImg.getWidth();
-					if (1600 < newImg.getWidth() && 960 < 1600 * scale) {
-						scale = newImg.getWidth() / newImg.getHeight();
-						setHeight();
-					} else {
-						setWidth();
+				
+				double imgW = Double.valueOf(newImg.getWidth());
+				double imgH = Double.valueOf(newImg.getHeight());
+				
+				setWidth(imgW + 10);
+				setHeight(imgH + 10);
+				
+				if (imgH < imgW) { // 横向
+					scale = imgH / imgW; // 宽高比
+					if (1600 < imgW || 820 < imgH) {
+						if (1600 < imgW || 3 < imgW / imgH) {
+							setWidth();
+						} else {
+							if (imgW < imgH) {
+								setHeight();
+							} else {
+								setWidth();
+							}
+						}
 					}
 				} else { // 纵向
-					scale = newImg.getWidth() / newImg.getHeight();
-					if (960 < newImg.getHeight() && 1600 < 960 * scale) {
-						scale = newImg.getHeight() / newImg.getWidth();
-						setWidth();
-					} else {
-						setHeight();
+					scale = imgW / imgH; // 宽高比
+					if (1600 < imgW || 820 < imgH) {
+						if ((960 < imgH && 1200 < 960 * scale) || 3 < imgH / imgW) {
+							setWidth();
+						} else {
+							if (imgW < imgH) {
+								setHeight();
+							} else {
+								setWidth();
+							}
+						}
 					}
 				}
 				Rectangle2D screen = Screen.getPrimary().getVisualBounds();
 				setX(screen.getMaxX() / 2 - getWidth() / 2);
 				setY(screen.getMaxY() / 2 - getHeight() / 2);
-				getMain().setBorder(BorderX.EMPTY);
-				getMain().setCenter(img);
+				getMain().getChildren().remove(getPB());
+				getImgBox().setBackground(Background.EMPTY);
+				getImgBox().setBorder(BorderX.EMPTY);
+				getImgBox().setCenter(img);
+				getImgBox().setEffect(dropshadow);
 			}
 		});
 		request.start();
 	}
 	
 	private void setWidth() {
-		setWidth(1600);
-		setHeight(1600 * scale);
-		getImg().setFitWidth(getWidth() + 1);
-		getImg().setFitHeight(getHeight() + 1);
+		setWidth(1200 + 10);
+		setHeight(1200 * scale + 10);
+		getImg().setFitWidth(getWidth() - 10);
+		getImg().setFitHeight(getHeight() - 10);
 	}
 	
 	private void setHeight() {
-		setWidth(960 * scale);
-		setHeight(960);
-		getImg().setFitWidth(getWidth() + 1);
-		getImg().setFitHeight(getHeight() + 1);
+		setWidth(960 * scale + 10);
+		setHeight(960 + 10);
+		getImg().setFitWidth(getWidth() - 10);
+		getImg().setFitHeight(getHeight() - 10);
 	}
 }

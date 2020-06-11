@@ -1,7 +1,5 @@
 package net.imyeyu.netdisk.view;
 
-import java.util.ResourceBundle;
-
 import javafx.beans.Observable;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.collections.FXCollections;
@@ -20,11 +18,12 @@ import net.imyeyu.netdisk.bean.IOCell;
 import net.imyeyu.netdisk.ui.IOFinishList;
 import net.imyeyu.netdisk.ui.IOList;
 import net.imyeyu.netdisk.ui.NavButton;
+import net.imyeyu.utils.ResourceBundleX;
 import net.imyeyu.utils.gui.BorderX;
 
 public class ViewIO extends Stage {
 
-	private ResourceBundle rb;
+	private ResourceBundleX rbx = Entrance.getRb();
 	
 	private IOList uploadList, downloadList;
 	private IOFinishList finishList;
@@ -32,19 +31,18 @@ public class ViewIO extends Stage {
 	private BorderPane main, left;
 	
 	public ViewIO() {
-		this.rb = Entrance.getRb();
 		
 		// 导航
 		left = new BorderPane();
 		VBox nav = new VBox();
-		upload = new NavButton(rb.getString("ioListUpload"), 100, 32);
-		download = new NavButton(rb.getString("ioListDownload"), 100, 32);
-		finish = new NavButton(rb.getString("ioListFinish"), 100, 32);
+		upload = new NavButton(rbx.def("upload"), 100, 32);
+		download = new NavButton(rbx.def("download"), 100, 32);
+		finish = new NavButton(rbx.def("ioListFinish"), 100, 32);
 
 		nav.setBorder(new BorderX("#B5B5B5", BorderX.SOLID, 1).bottom());
 		nav.getChildren().addAll(upload, download, finish);
 		
-		clear = new NavButton(rb.getString("ioListClear"), 100, 26);
+		clear = new NavButton(rbx.def("ioListClear"), 100, 26);
 		clear.setPadding(new Insets(0, 0, 4, 0));
 		clear.setBorder(Border.EMPTY);
 		
@@ -69,15 +67,16 @@ public class ViewIO extends Stage {
 		downloadList = new IOList(obsDownloadList);
 		
 		// 已完成列表
-		finishList = new IOFinishList();
+		finishList = new IOFinishList(rbx);
 		
 		main = new BorderPane();
+		main.setId("main");
 		main.setBorder(new BorderX("#B5B5B5", BorderX.SOLID, 1).top());
 		main.setLeft(left);
 		
 		Scene scene = new Scene(main);
 		scene.getStylesheets().add(this.getClass().getResource("/net/imyeyu/netdisk/res/ioList.css").toExternalForm());
-		setTitle("传输列表");
+		setTitle(rbx.def("ioListTitle"));
 		getIcons().add(new Image("net/imyeyu/netdisk/res/ioListTitle.png"));
 		setMinWidth(460);
 		setMinHeight(270);

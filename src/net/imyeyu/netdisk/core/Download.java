@@ -1,5 +1,7 @@
 package net.imyeyu.netdisk.core;
 
+import java.applet.Applet;
+import java.applet.AudioClip;
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.File;
@@ -22,7 +24,10 @@ import javafx.concurrent.Task;
 import net.imyeyu.netdisk.Entrance;
 import net.imyeyu.netdisk.bean.DownloadFile;
 import net.imyeyu.netdisk.bean.FileCell;
+import net.imyeyu.netdisk.bean.IOHistory;
 import net.imyeyu.netdisk.bean.Request;
+import net.imyeyu.netdisk.ctrl.Main;
+import net.imyeyu.netdisk.ui.SystemTrayX;
 import net.imyeyu.utils.YeyuUtils;
 
 public class Download extends Service<Double> {
@@ -37,6 +42,8 @@ public class Download extends Service<Double> {
 	private File dlFolder;
 	private String ip, token; int port;
 	private double transpeed = 0; // 传输总数据，用于测速
+	private boolean isDownloading = false; // 用于完成队列时播放音效
+	private AudioClip ac;
 	
 	public Download() {
 		list.set(FXCollections.observableArrayList());
@@ -47,19 +54,21 @@ public class Download extends Service<Double> {
 		} else {
 			token = config.get("token").toString();
 		}
-		
-		dlFolder = new File(config.get("dlLocation").toString());
-		dlFolder.mkdirs();
 	}
 
 	protected Task<Double> createTask() {
 		return new Task<Double>() {
 			protected Double call() throws Exception {
+				ac = Applet.newAudioClip(this.getClass().getClassLoader().getResource("net/imyeyu/netdisk/res/finish.wav"));
 				Gson gson = new Gson();
 				Socket socket = null;
 				while (!isShutdown) {
 					config = Entrance.getConfig();
+					// 执行传输
 					for (int i = 0; i < list.size(); i++) {
+						isDownloading = Boolean.valueOf(config.get("sound").toString());
+						dlFolder = new File(config.get("dlLocation").toString());
+						dlFolder.mkdirs();
 						Thread.sleep(500);
 						if (socket != null && socket.isConnected()) {
 							socket.close();
@@ -68,6 +77,7 @@ public class Download extends Service<Double> {
 						socket = new Socket();
 						socket.connect(new InetSocketAddress(ip, port), 8000);
 						if (socket.isConnected()) {
+							SystemTrayX.getIcon().setToolTip("");
 							DownloadFile file = list.get(i);
 							// 唤醒
 							os = socket.getOutputStream();
@@ -91,7 +101,6 @@ public class Download extends Service<Double> {
 								while ((length = dis.read(bytes, 0, bytes.length)) != -1) {
 									fos.write(bytes, 0, length);
 									fos.flush();
-									Thread.sleep(10); // 本地测试限速
 									progress += length;
 									transpeed += length;
 									updateValue(progress);
@@ -102,11 +111,14 @@ public class Download extends Service<Double> {
 								if (fos != null) fos.close();
 								if (dis != null) dis.close();
 								
-								// # 号区分返回路径和占位符（需要个不断变化的数作占位符，不然 Property 不会监听到）
-								// 占位符在前面可以缩短 subString 代码
-								updateMessage(i + "#" + dlPath);
+								Main.getIoHistories().add(new IOHistory(file.getName(), dlPath, true));
+								updateMessage(String.valueOf(Math.random()));
 							}
 						}
+					}
+					if (isDownloading && Boolean.valueOf(config.get("sound").toString())) {
+						ac.play();
+						isDownloading = false;
 					}
 					list.get().clear();
 					Thread.sleep(3000);
@@ -123,9 +135,9 @@ public class Download extends Service<Double> {
 	/**
 	 * 添加下载队列
 	 * 
-	 * @param files 目标文件列表（取于主界面视图）
+	 * @param files      目标文件列表（取于主界面视图）
 	 * @param targetPath 目标路径
-	 * @param dlPath 下载相对位置（相对于设置的下载文件夹，不可越级）
+	 * @param dlPath     下载相对位置（相对于设置的下载文件夹，不可越级）
 	 */
 	public void add(List<FileCell> files, String targetPath, String dlPath) {
 		String name;

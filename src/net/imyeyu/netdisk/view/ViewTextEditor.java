@@ -18,11 +18,13 @@ import javafx.scene.layout.Background;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
+import net.imyeyu.netdisk.Entrance;
+import net.imyeyu.utils.ResourceBundleX;
 import net.imyeyu.utils.gui.BorderX;
 
 public class ViewTextEditor extends Stage {
 	
-//	private ResourceBundle rb = Entrance.getRb();
+	private ResourceBundleX rbx = Entrance.getRb();
 	
 	private Label tips;
 	private String path;
@@ -41,37 +43,37 @@ public class ViewTextEditor extends Stage {
 		// 菜单
 		MenuBar menu = new MenuBar();
 		
-		Menu file = new Menu("文件");
-		reload = new MenuItem("重载云端文件", new ImageView("net/imyeyu/netdisk/res/reload.png"));
-		saveCloud = new MenuItem("保存到云端", new ImageView("net/imyeyu/netdisk/res/save.png"));
+		Menu file = new Menu(rbx.def("file"));
+		reload = new MenuItem(rbx.def("textReload"), new ImageView("net/imyeyu/netdisk/res/reload.png"));
+		saveCloud = new MenuItem(rbx.def("textSaveToCloud"), new ImageView("net/imyeyu/netdisk/res/save.png"));
 		saveCloud.setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN));
-		saveCache = new MenuItem("缓存到本地");
-		saveSync = new MenuItem("同步保存");
+		saveCache = new MenuItem(rbx.def("textCacheToLocal"));
+		saveSync = new MenuItem(rbx.def("textSyncSave"));
 		saveSync.setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.SHORTCUT_DOWN));
-		saveAs = new MenuItem("另存为..");
-		close = new MenuItem("关闭", new ImageView("net/imyeyu/netdisk/res/exit.png"));
+		saveAs = new MenuItem(rbx.def("textSaveAs"));
+		close = new MenuItem(rbx.def("close"), new ImageView("net/imyeyu/netdisk/res/exit.png"));
 		close.setAccelerator(new KeyCodeCombination(KeyCode.W, KeyCombination.SHORTCUT_DOWN));
 		file.getItems().addAll(reload, new SeparatorMenuItem(), saveCloud, saveCache, saveSync, saveAs, new SeparatorMenuItem(), close);
 		
-		Menu edit = new Menu("编辑");
-		cancel = new MenuItem("撤销", new ImageView("net/imyeyu/netdisk/res/undo.png"));
+		Menu edit = new Menu(rbx.def("edit"));
+		cancel = new MenuItem(rbx.def("undo"), new ImageView("net/imyeyu/netdisk/res/undo.png"));
 		cancel.setAccelerator(new KeyCodeCombination(KeyCode.Z, KeyCombination.SHORTCUT_DOWN));
-		redo = new MenuItem("重做", new ImageView("net/imyeyu/netdisk/res/redo.png"));
+		redo = new MenuItem(rbx.def("redo"), new ImageView("net/imyeyu/netdisk/res/redo.png"));
 		redo.setAccelerator(new KeyCodeCombination(KeyCode.Y, KeyCombination.SHORTCUT_DOWN));
-		selectAll = new MenuItem("全选", new ImageView("net/imyeyu/netdisk/res/selectAll.png"));
+		selectAll = new MenuItem(rbx.def("selectAll"), new ImageView("net/imyeyu/netdisk/res/selectAll.png"));
 		selectAll.setAccelerator(new KeyCodeCombination(KeyCode.A, KeyCombination.SHORTCUT_DOWN));
-		copy = new MenuItem("复制", new ImageView("net/imyeyu/netdisk/res/copyText.png"));
+		copy = new MenuItem(rbx.def("copy"), new ImageView("net/imyeyu/netdisk/res/copyText.png"));
 		copy.setAccelerator(new KeyCodeCombination(KeyCode.C, KeyCombination.SHORTCUT_DOWN));
-		paste = new MenuItem("粘贴", new ImageView("net/imyeyu/netdisk/res/paste.png"));
+		paste = new MenuItem(rbx.def("paste"), new ImageView("net/imyeyu/netdisk/res/paste.png"));
 		paste.setAccelerator(new KeyCodeCombination(KeyCode.V, KeyCombination.SHORTCUT_DOWN));
-		cut = new MenuItem("剪切", new ImageView("net/imyeyu/netdisk/res/cut.png"));
+		cut = new MenuItem(rbx.def("cut"), new ImageView("net/imyeyu/netdisk/res/cut.png"));
 		cut.setAccelerator(new KeyCodeCombination(KeyCode.X, KeyCombination.SHORTCUT_DOWN));
 		edit.getItems().addAll(cancel, redo, selectAll, new SeparatorMenuItem(), copy, paste, cut);
 		
-		Menu font = new Menu("字体");
+		Menu font = new Menu(rbx.def("font"));
 		
 		String[] fontSizeText = {"12", "14", "16", "18", "20", "22"};
-		fontSizeItems = new Menu("字号", new ImageView("net/imyeyu/netdisk/res/fontSize.png"));
+		fontSizeItems = new Menu(rbx.def("fontSize"), new ImageView("net/imyeyu/netdisk/res/fontSize.png"));
 		for (int i = 0; i < fontSizeText.length; i++) {
 			fontSize[i] = new MenuItem(fontSizeText[i]);
 			fontSize[i].setStyle("-fx-font-size: " + fontSizeText[i]);
@@ -79,7 +81,7 @@ public class ViewTextEditor extends Stage {
 		}
 		
 		String[] fontFamilyText = {"System", "Arial", "Calibri", "Consolas", "Microsoft YaHei"};
-		fontFamilyItems = new Menu("字体", new ImageView("net/imyeyu/netdisk/res/fontFamily.png"));
+		fontFamilyItems = new Menu(rbx.def("font"), new ImageView("net/imyeyu/netdisk/res/fontFamily.png"));
 		for (int i = 0; i < fontFamilyText.length; i++) {
 			fontFamily[i] = new MenuItem(fontFamilyText[i]);
 			fontFamily[i].setStyle("-fx-font-family: " + fontFamilyText[i]);
@@ -109,7 +111,7 @@ public class ViewTextEditor extends Stage {
 		textBox.setCenter(textArea);
 		// 提示
 		HBox tipsBox = new HBox();
-		tips = new Label("正在获取文本数据..");
+		tips = new Label(rbx.def("textGetting"));
 		tipsBox.setPadding(new Insets(4, 6, 4, 6));
 		tipsBox.setBorder(new BorderX("#B5B5B5", BorderX.SOLID, 1).top());
 		tipsBox.getChildren().add(tips);
@@ -123,7 +125,7 @@ public class ViewTextEditor extends Stage {
 		scene.getStylesheets().add(this.getClass().getResource("/net/imyeyu/netdisk/res/textEditor.css").toExternalForm());
 		setScene(scene);
 		getIcons().add(new Image("net/imyeyu/netdisk/res/textEditor.png"));
-		setTitle("文本文件编辑器 - " + path);
+		setTitle(rbx.r("textEditor") + path);
 		setMinWidth(320);
 		setMinHeight(220);
 		setWidth(620);

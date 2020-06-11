@@ -3,7 +3,6 @@ package net.imyeyu.netdisk.ctrl;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.ResourceBundle;
 
 import com.google.gson.Gson;
 
@@ -16,20 +15,26 @@ import net.imyeyu.netdisk.dialog.Confirm;
 import net.imyeyu.netdisk.request.PublicRequest;
 import net.imyeyu.netdisk.request.TextRequest;
 import net.imyeyu.netdisk.view.ViewTextEditor;
+import net.imyeyu.utils.ResourceBundleX;
 import net.imyeyu.utils.YeyuUtils;
 
 public class TextEditor extends ViewTextEditor {
 	
-	private ResourceBundle rb = Entrance.getRb();
+	private ResourceBundleX rbx = Entrance.getRb();
+	private Map<String, Object> config = Entrance.getConfig();
 	
-	private double fontSize = 14;
+	private int fontSize = 12;
 	private String fontFamily = "System";
-	private String path, oldData;
+	private String path, oldData = "";
 	private SimpleBooleanProperty isSave = new SimpleBooleanProperty(false);
 
 	public TextEditor(String path) {
 		super(path);
 		this.path = path;
+		fontSize = Integer.valueOf(config.get("fontSize").toString());
+		fontFamily = config.get("fontFamily").toString();
+		getLine().setFont(Font.font(fontFamily, fontSize));
+		getTextArea().setFont(Font.font(fontFamily, fontSize));
 		
 		// 重新载入云端文件
 		getReload().setOnAction(event -> getData());
@@ -39,7 +44,7 @@ public class TextEditor extends ViewTextEditor {
 		getSaveCache().setOnAction(event -> {
 			(new File("text")).mkdirs();
 			setCache("text" + File.separator + path.substring(path.lastIndexOf(File.separator)));
-			setLines("已缓存本地 - ");
+			setLines(rbx.def("textCache"));
 		});
 		// 同步保存
 		getSaveSync().setOnAction(event -> {
@@ -50,11 +55,11 @@ public class TextEditor extends ViewTextEditor {
 		// 另存为
 		getSaveAs().setOnAction(event -> {
 			DirectoryChooser directoryChooser = new DirectoryChooser();
-			directoryChooser.setTitle(rb.getString("fileSelectTypeFolder"));
+			directoryChooser.setTitle(rbx.def("fileSelectTypeFolder"));
 			File dir = directoryChooser.showDialog(null);
 			if (dir != null) {
 				setCache(dir + File.separator + path.substring(path.lastIndexOf(File.separator)));
-				setLines("已保存 - ");
+				setLines(rbx.def("textSave"));
 			}
 		});
 		// 关闭
@@ -82,7 +87,7 @@ public class TextEditor extends ViewTextEditor {
 		for (int i = 0; i < getFontSize().length; i++) {
 			getFontSize()[i].setOnAction(event -> {
 				MenuItem item = (MenuItem) event.getSource();
-				fontSize = Double.valueOf(item.getText());
+				fontSize = Integer.valueOf(item.getText());
 				getTextArea().setFont(Font.font(fontFamily, fontSize));
 				getLine().requestFocus();
 				getTextArea().requestFocus();
@@ -115,6 +120,7 @@ public class TextEditor extends ViewTextEditor {
 				event.consume();
 				confirm();
 			} else {
+				setConfig();
 				close();
 			}
 		});
@@ -128,16 +134,29 @@ public class TextEditor extends ViewTextEditor {
 	 * 
 	 */
 	private void confirm() {
-		Confirm confirm = new Confirm("提示", "文本已修改，是否保存到云端", true);
+		Confirm confirm = new Confirm(rbx.def("tips"), rbx.def("textChanged"), true);
 		confirm.initConfirm(confirm, cevent -> {
 			setData();
+			setConfig();
 			confirm.close();
 			this.close();
 		});
 		confirm.initDeny(confirm, devent -> {
+			setConfig();
 			confirm.close();
 			this.close();
 		});
+	}
+	
+	/**
+	 * 保存编辑器样式设置
+	 * 
+	 */
+	private void setConfig() {
+		Map<String, Object> config = Entrance.getConfig();
+		config.put("fontFamily", fontFamily);
+		config.put("fontSize", String.valueOf(fontSize));
+		Entrance.setConfig(config);
 	}
 	
 	/**
@@ -153,7 +172,7 @@ public class TextEditor extends ViewTextEditor {
 			request.valueProperty().addListener((obs, oldValue, newValue) -> {
 				if (newValue.equals("finish")) {
 					isSave.setValue(!isSave.getValue());
-					setLines("已保存至云端 - ");
+					setLines(rbx.def("textCloud") + " - ");
 					oldData = getTextArea().getText();
 				}
 			});
@@ -185,8 +204,13 @@ public class TextEditor extends ViewTextEditor {
 				sb.append(i);
 			}
 		}
+		int j = 0;
+		while (j < 32) { // 保持出现滚动条
+			sb.append("\r\n");
+			j++;
+		}
 		getLine().setText(sb.toString());
-		getTips().setText(content + "行数：" + lines + " - 长度：" + getTextArea().getText().length());
+		getTips().setText(content + rbx.def("textLine") + lines + rbx.l("textLength") + getTextArea().getText().length());
 	}
 	
 	/**
@@ -201,7 +225,11 @@ public class TextEditor extends ViewTextEditor {
 		});
 		request.valueProperty().addListener((obs, oldValue, newValue) -> {
 			if (newValue.equals("finish")) {
-				getTextArea().setText(sb.substring(0, sb.length() - 4));
+				if (4 < sb.length()) {
+					getTextArea().setText(sb.substring(0, sb.length() - 4));
+				} else {
+					getTextArea().setText(sb.toString());
+				}
 				oldData = getTextArea().getText();
 				setLines("");
 			}

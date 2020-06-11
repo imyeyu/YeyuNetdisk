@@ -1,5 +1,7 @@
 package net.imyeyu.netdisk.ui;
 
+import java.awt.Desktop;
+import java.io.File;
 import java.io.IOException;
 
 import javafx.beans.property.SimpleStringProperty;
@@ -17,6 +19,7 @@ import javafx.scene.layout.Region;
 import javafx.util.Callback;
 import net.imyeyu.netdisk.bean.IOHistory;
 import net.imyeyu.netdisk.util.FileFormat;
+import net.imyeyu.utils.ResourceBundleX;
 
 public class IOFinishList extends ListView<IOHistory> {
 	
@@ -27,7 +30,7 @@ public class IOFinishList extends ListView<IOHistory> {
 	private BorderPane main;
 	private SimpleStringProperty show = new SimpleStringProperty();
 	
-	public IOFinishList() {
+	public IOFinishList(ResourceBundleX rbx) {
 		setPadding(Insets.EMPTY);
 		setStyle("-fx-background-insets: 0");
 		setCellFactory(new Callback<ListView<IOHistory>, ListCell<IOHistory>>() {
@@ -46,11 +49,20 @@ public class IOFinishList extends ListView<IOHistory> {
 							}
 							icon = new ImageView(FileFormat.getImage(item.getName().substring(item.getName().lastIndexOf(".") + 1)));
 							name = new Label(item.getName());
+							name.setOnMouseClicked(event -> {
+								if (event.getClickCount() == 2 && item.isLocal()) {
+									try {
+										Desktop.getDesktop().open(new File(item.getPath() + File.separator + item.getName()));
+									} catch (IOException e) {
+										e.printStackTrace();
+									}
+								}
+							});
 							file.setAlignment(Pos.CENTER_LEFT);
 							file.setSpacing(6);
 							file.getChildren().addAll(ioIcon, icon, name);
 							
-							view = new Button("打开文件夹");
+							view = new Button(rbx.def("openFolder"));
 							view.setOnAction(event -> {
 								if (item.isLocal()) {
 									try {

@@ -10,18 +10,22 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import net.imyeyu.netdisk.Entrance;
 import net.imyeyu.netdisk.bean.FileCell;
 import net.imyeyu.netdisk.request.PublicRequest;
+import net.imyeyu.utils.ResourceBundleX;
 import net.imyeyu.utils.gui.BorderX;
 
 public class Rename extends Stage {
 	
-//	private ResourceBundle rb;
+	private ResourceBundleX rbx = Entrance.getRb();
 	
 	private Label title, tips;
 	private String path, oldValue;
@@ -41,7 +45,7 @@ public class Rename extends Stage {
 		BorderPane main = new BorderPane();
 		
 		content = new VBox();
-		title = new Label("请输入新的名称：");
+		title = new Label(rbx.def("renameEnter"));
 		name = new TextField(oldValue);
 		tips = new Label();
 		content.setSpacing(8);
@@ -49,8 +53,8 @@ public class Rename extends Stage {
 		content.getChildren().addAll(title, name);
 		
 		HBox btnBox = new HBox();
-		confirm = new Button("确认");
-		cancel = new Button("取消");
+		confirm = new Button(rbx.def("confirm"));
+		cancel = new Button(rbx.def("cancel"));
 		btnBox.setPadding(new Insets(6, 12, 6, 12));
 		btnBox.setSpacing(14);
 		btnBox.setAlignment(Pos.CENTER);
@@ -61,8 +65,9 @@ public class Rename extends Stage {
 		main.setBottom(btnBox);
 		
 		Scene scene = new Scene(main);
+		getIcons().add(new Image("net/imyeyu/netdisk/res/warn.png"));
 		setScene(scene);
-		setTitle("重命名");
+		setTitle(rbx.def("rename"));
 		setWidth(260);
 		setHeight(140);
 		setResizable(false);
@@ -71,7 +76,10 @@ public class Rename extends Stage {
 
 		confirm.setFocusTraversable(false);
 		cancel.setFocusTraversable(false);
-		
+
+		main.setOnKeyPressed(event -> {
+			if (event.getCode().equals(KeyCode.ENTER)) confirm();
+		});
 		confirm.setOnAction(event -> confirm());
 		cancel.setOnAction(event -> close());
 		name.setOnKeyPressed(evnet -> {
@@ -91,7 +99,7 @@ public class Rename extends Stage {
 			oldName = list.get(i).getName();
 			if (name.getText().equals(oldName.substring(oldName.indexOf(".") + 1))) {
 				content.getChildren().add(tips);
-				tips.setText("该命名对象已存在当前目录");
+				tips.setText(rbx.def("renameExist"));
 				setHeight(170);
 				return;
 			}

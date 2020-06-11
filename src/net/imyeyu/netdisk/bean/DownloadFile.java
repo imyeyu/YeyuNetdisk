@@ -10,10 +10,10 @@ public class DownloadFile {
 	/**
 	 * 下载文件对象
 	 * 
-	 * @param name 文件名
+	 * @param name       文件名
 	 * @param targetPath 目标路径（文件位于云服务器的路径）
-	 * @param dlPath 下载路径
-	 * @param size 文件大小
+	 * @param dlPath     下载路径
+	 * @param size       文件大小
 	 */
 	public DownloadFile(String name, String targetPath, String dlPath, long size) {
 		this.name = name;

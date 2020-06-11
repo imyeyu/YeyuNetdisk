@@ -23,20 +23,18 @@ public class IO extends ViewIO {
 	private String isUpload, isDownload;
 	private Map<String, Object> config = Entrance.getConfig();
 	private SimpleStringProperty show;
-	
+
 	private ObservableList<IOCell> uploadList, downloadList;
 	private ObservableList<IOHistory> finishList;
 
 	public IO(Upload upload, Download download) {
 		this.upload = upload;
 		this.download = download;
+		
+		// 初始化
 		initUploadList();
 		initDownloadList();
 		initFinishList();
-		List<IOHistory> ioHistories = Main.getIoHistories();
-		for (int i = 0; i < ioHistories.size(); i++) {
-			finishList.add(ioHistories.get(i));
-		}
 		
 		// 上传
 		getUpload().setOnAction(event -> upload());
@@ -57,7 +55,8 @@ public class IO extends ViewIO {
 	}
 	
 	public void close() {
-		Main.setIoHistories(finishList);
+		getUploadList().setItems(null);
+		getDownloadList().setItems(null);
 		super.close();
 	}
 	
@@ -91,9 +90,20 @@ public class IO extends ViewIO {
 		if (0 < downloadList.size()) bindDownloadCore(downloadList.get(0));
 	}
 	
+	// 初始化完成列表
 	private void initFinishList() {
 		finishList = getFinishList().getItems();
-		show = getFinishList().getShow();
+		loadFinishList();
+		show = getFinishList().getShow(); // 打开网盘文件夹
+	}
+	
+	// 加载完成列表
+	private void loadFinishList() {
+		finishList.clear();
+		List<IOHistory> ioHistories = Main.getIoHistories();
+		for (int i = ioHistories.size() - 1; -1 < i; i--) {
+			finishList.add(ioHistories.get(i));
+		}
 	}
 	
 	// 绑定上传核心
@@ -104,6 +114,7 @@ public class IO extends ViewIO {
 					isUpload = newValue;
 					uploadList.remove(0);
 					getUploadList().refresh();
+					loadFinishList();
 					if (0 < uploadList.size()) bindUploadCore(uploadList.get(0));
 				}
 			}
@@ -121,10 +132,10 @@ public class IO extends ViewIO {
 		download.messageProperty().addListener((list, oldValue, newValue) -> {
 			if (!newValue.equals(isDownload)) {
 				if (downloadList.size() != 0) {
-					finishList.add(0, new IOHistory(downloadList.get(0).getName(), newValue.substring(newValue.indexOf("#") + 1), true));
 					isDownload = newValue;
 					downloadList.remove(0);
 					getDownloadList().refresh();
+					loadFinishList();
 					if (0 < downloadList.size()) bindDownloadCore(downloadList.get(0));
 				}
 			}

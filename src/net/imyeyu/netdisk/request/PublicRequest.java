@@ -6,6 +6,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.util.Map;
 
 import com.google.gson.Gson;
@@ -37,10 +38,23 @@ public class PublicRequest extends Service<String> {
 	
 	protected Task<String> createTask() {
 		return new Task<String>() {
+			
+			private int reTry = 0;
+			private String flag = null, result = null;
+			
 			protected String call() throws Exception {
-				String flag = null, result = null;
-				socket = new Socket();
-				socket.connect(new InetSocketAddress(ip, port), 8000);
+				return request();
+			}
+			
+			private String request() throws Exception {
+				try {
+					if (reTry == 3) return null; // 尝试重连
+					socket = new Socket();
+					socket.connect(new InetSocketAddress(ip, port), 1000);
+				} catch (SocketTimeoutException e) {
+					reTry++;
+					return request();
+				}
 				if (socket.isConnected()) {
 					Request request = new Request();
 					request.setToken(token);
@@ -61,5 +75,13 @@ public class PublicRequest extends Service<String> {
 				return result;
 			}
 		};
+	}
+	
+	public String getRequestKey() {
+		return key;
+	}
+	
+	public String getRequestValue() {
+		return value;
 	}
 }

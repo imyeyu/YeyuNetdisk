@@ -1,7 +1,5 @@
 package net.imyeyu.netdisk.ui;
 
-import java.util.ResourceBundle;
-
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
@@ -11,12 +9,13 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.text.Font;
 import net.imyeyu.netdisk.Entrance;
+import net.imyeyu.utils.ResourceBundleX;
 import net.imyeyu.utils.YeyuUtils;
 import net.imyeyu.utils.gui.BorderX;
 
 public class TipsPane extends BorderPane {
 	
-	private ResourceBundle rb = Entrance.getRb();
+	private ResourceBundleX rbx = Entrance.getRb();
 	
 	private SimpleIntegerProperty items = new SimpleIntegerProperty();
 	private SimpleIntegerProperty selected = new SimpleIntegerProperty();
@@ -26,11 +25,11 @@ public class TipsPane extends BorderPane {
 		Font font = Font.font(13);
 		Insets insets = new Insets(2, 6, 2, 6);
 		Border border = new BorderX("#B5B5B5", BorderX.SOLID, 1).right();
-		// 下载速度
+		// 传输速度
 		HBox speedBox = new HBox();
 		Label speedIcon = new Label();
 		speedIcon.setPrefSize(16, 16);
-		YeyuUtils.gui().setBackground(speedIcon, "net/imyeyu/netdisk/res/ioList.png", 16, 2, 2);
+		YeyuUtils.gui().setBg(speedIcon, "net/imyeyu/netdisk/res/ioList.png", 16, 2, 2);
 		speed = new Label("0 B/s");
 		speed.setFont(font);
 		speed.setPadding(insets);
@@ -44,7 +43,7 @@ public class TipsPane extends BorderPane {
 		tipsItems.setFont(font);
 		items.addListener((obs, oldValue, newValue) -> {
 			if (newValue.intValue() != 0) {
-				tipsItems.setText(newValue.intValue() + " " + rb.getString("mainTipsItems"));
+				tipsItems.setText(newValue.intValue() + rbx.l("mainTipsItems"));
 			} else {
 				tipsItems.setText("");
 			}
@@ -53,7 +52,7 @@ public class TipsPane extends BorderPane {
 		tipsSelected.setFont(font);
 		selected.addListener((obs, oldValue, newValue) -> {
 			if (newValue.intValue() != 0) {
-				tipsSelected.setText(newValue.intValue() + " " + rb.getString("mainTipsSelected"));
+				tipsSelected.setText(newValue.intValue() + rbx.l("mainTipsSelected"));
 			} else {
 				tipsSelected.setText("");
 			}

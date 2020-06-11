@@ -8,10 +8,14 @@ import com.google.gson.Gson;
 
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
+import net.imyeyu.netdisk.Entrance;
 import net.imyeyu.netdisk.request.PublicRequest;
+import net.imyeyu.utils.ResourceBundleX;
 
 public class FileTPService extends Service<String> {
 
+	private ResourceBundleX rbx = Entrance.getRb();
+	
 	private String path, flag;
 	private List<String> list;
 	
@@ -29,7 +33,7 @@ public class FileTPService extends Service<String> {
 				map.put("path", path);
 				map.put("list", list);
 				
-				updateMessage("正在处理...");
+				updateMessage(rbx.def("running"));
 				
 				PublicRequest request = new PublicRequest(flag, new Gson().toJson(map).toString());
 				request.valueProperty().addListener((obs, oldValue, newValue) -> {

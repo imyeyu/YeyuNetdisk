@@ -17,18 +17,21 @@ import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import net.imyeyu.netdisk.Entrance;
+import net.imyeyu.netdisk.dialog.Alert;
 import net.imyeyu.netdisk.request.ImgRequest;
+import net.imyeyu.utils.ResourceBundleX;
 import net.imyeyu.utils.YeyuUtils;
 
 public class PhotoList extends VBox {
 	
-	private boolean isShutdown = false;
+	private ResourceBundleX rbx = Entrance.getRb();
 	
 	private Map<Photo, String> requestList = new LinkedHashMap<>();
 	private Iterator<Map.Entry<Photo, String>> entries;
 	
 	private double pbStep = -1;
-	private boolean isCompressImg = false;
+	private boolean isShutdown = false, isCompressImg = false;
 	private ProgressBar pb;
 	
 	public PhotoList(String year, JsonArray list, boolean isCompressImg) {
@@ -57,7 +60,7 @@ public class PhotoList extends VBox {
 			
 			// 月份标签
 			if (YeyuUtils.encode().isNumber(month.get("month").getAsString())) {
-				monthLabel = new Label(month.get("month").getAsString() + " 月");
+				monthLabel = new Label(month.get("month").getAsString() + rbx.l("month"));
 			} else {
 				monthLabel = new Label(month.get("month").getAsString());
 			}
@@ -106,6 +109,8 @@ public class PhotoList extends VBox {
 	    		} else {
 	    			getChildren().remove(pb);
 	    		}
+			} else {
+				new Alert(rbx.def("error"), rbx.def("getFail"));
 			}
 	    });
 	    request.start();

@@ -3,7 +3,6 @@ package net.imyeyu.netdisk.dialog;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.ResourceBundle;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -23,40 +22,49 @@ import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeItem.TreeModificationEvent;
 import javafx.scene.control.TreeView;
 import javafx.scene.image.Image;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import net.imyeyu.netdisk.Entrance;
 import net.imyeyu.netdisk.request.PublicRequest;
+import net.imyeyu.utils.ResourceBundleX;
 import net.imyeyu.utils.gui.BorderX;
 
 public class UnZip extends Stage {
-	private ResourceBundle rb = Entrance.getRb();
+	
+	private ResourceBundleX rbx = Entrance.getRb();
 	private SimpleBooleanProperty isFinish = new SimpleBooleanProperty(false);
 	
+	private Label header;
+	private Button confirm, skip, cancel;
 	private TreeView<String> treeView;
 	private TreeItem<String> root;
+	
+	private String zip, flag;
 
 	public UnZip(String title, String zip, String flag) {
+		this.zip = zip;
+		this.flag = flag;
 		
 		BorderPane main = new BorderPane();
-		Label header = new Label(rb.getString("fileSelectTypeFolder"));
+		header = new Label(rbx.def("fileSelectTypeFolder"));
 		header.setPadding(new Insets(0, 0, 8, 0));
 		
 		treeView = new TreeView<>();
 		treeView.setBorder(new BorderX("#B5B5B5", BorderX.SOLID, 1).exBottom());
 		treeView.setPadding(Insets.EMPTY);
 		treeView.setStyle("-fx-background-insets: 0");
-		root = new TreeItem<>("根目录");
+		root = new TreeItem<>(rbx.def("root"));
 		root.setExpanded(true);
 		treeView.setRoot(root);
 		
 		HBox btnBox = new HBox();
-		Button confirm = new Button("确定");
-		Button skip = new Button("跳过");
+		confirm = new Button(rbx.def("confirm"));
+		skip = new Button(rbx.def("skip"));
 		skip.setDisable(true);
-		Button cancel = new Button("取消");
+		cancel = new Button(rbx.def("cancel"));
 		btnBox.setPadding(new Insets(8, 0, 0, 0));
 		btnBox.setBorder(new BorderX("#B5B5B5", BorderX.SOLID, 1).top());
 		btnBox.setSpacing(8);
@@ -95,33 +103,37 @@ public class UnZip extends Stage {
 				getFolderList(path.toString(), event.getTreeItem());
 			}
 		});
-		// 确定
-		confirm.setOnAction(event -> {
-			treeView.setDisable(true);
-			confirm.setDisable(true);
-			skip.setDisable(false);
-			cancel.setDisable(true);
-			
-			TreeItem<String> item = treeView.getSelectionModel().getSelectedItem();
-			StringBuffer toPath = new StringBuffer();
-			while (item.getParent() != null) {
-				toPath.insert(0, item.getValue() + File.separator);
-				item = item.getParent();
-			}
-			toPath.insert(0, "\\");
-			UnZipService request = new UnZipService(zip, toPath.toString(), flag);
-			header.textProperty().bind(request.messageProperty());
-			request.valueProperty().addListener((obs, oldValue, newValue) -> {
-				if (newValue != null && newValue.equals("finish")) {
-					isFinish.set(true);
-					close();
-				}
-			});
-			request.start();
-		});
 		
+		main.setOnKeyPressed(event -> {
+			if (event.getCode().equals(KeyCode.ENTER)) confirm();
+		});
+		confirm.setOnAction(event -> confirm());
 		skip.setOnAction(event -> close());
 		cancel.setOnAction(event -> close());
+	}
+	
+	private void confirm() {
+		treeView.setDisable(true);
+		confirm.setDisable(true);
+		skip.setDisable(false);
+		cancel.setDisable(true);
+		
+		TreeItem<String> item = treeView.getSelectionModel().getSelectedItem();
+		StringBuffer toPath = new StringBuffer();
+		while (item.getParent() != null) {
+			toPath.insert(0, item.getValue() + File.separator);
+			item = item.getParent();
+		}
+		toPath.insert(0, "\\");
+		UnZipService request = new UnZipService(zip, toPath.toString(), flag);
+		header.textProperty().bind(request.messageProperty());
+		request.valueProperty().addListener((obs, oldValue, newValue) -> {
+			if (newValue != null && newValue.equals("finish")) {
+				isFinish.set(true);
+				close();
+			}
+		});
+		request.start();
 	}
 	
 	// 获取文件夹
@@ -156,6 +168,8 @@ public class UnZip extends Stage {
 }
 
 class UnZipService extends Service<String> {
+	
+	private ResourceBundleX rbx = Entrance.getRb();
 
 	private String zip, path, flag;
 	
@@ -173,7 +187,7 @@ class UnZipService extends Service<String> {
 				map.put("zip", zip);
 				map.put("path", path);
 				
-				updateMessage("正在处理...");
+				updateMessage(rbx.def("running"));
 				
 				PublicRequest request = new PublicRequest(flag, new Gson().toJson(map).toString());
 				request.valueProperty().addListener((obs, oldValue, newValue) -> {

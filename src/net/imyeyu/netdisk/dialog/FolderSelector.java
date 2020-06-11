@@ -2,7 +2,6 @@ package net.imyeyu.netdisk.dialog;
 
 import java.io.File;
 import java.util.List;
-import java.util.ResourceBundle;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -19,6 +18,7 @@ import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeItem.TreeModificationEvent;
 import javafx.scene.control.TreeView;
 import javafx.scene.image.Image;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.stage.Modality;
@@ -26,33 +26,41 @@ import javafx.stage.Stage;
 import net.imyeyu.netdisk.Entrance;
 import net.imyeyu.netdisk.request.PublicRequest;
 import net.imyeyu.netdisk.util.FileTPService;
+import net.imyeyu.utils.ResourceBundleX;
 import net.imyeyu.utils.gui.BorderX;
 
 public class FolderSelector extends Stage {
 	
-	private ResourceBundle rb = Entrance.getRb();
+	private ResourceBundleX rbx = Entrance.getRb();
 	private SimpleBooleanProperty isFinish = new SimpleBooleanProperty(false);
 	
+	private Label header;
+	private Button confirm, cancel;
 	private TreeView<String> treeView;
 	private TreeItem<String> root;
+	
+	private String flag;
+	private List<String> list;
 
 	public FolderSelector(String title, List<String> list, String flag) {
+		this.list = list;
+		this.flag = flag;
 		
 		BorderPane main = new BorderPane();
-		Label header = new Label(rb.getString("fileSelectTypeFolder"));
+		header = new Label(rbx.def("fileSelectTypeFolder"));
 		header.setPadding(new Insets(0, 0, 8, 0));
 		
 		treeView = new TreeView<>();
 		treeView.setBorder(new BorderX("#B5B5B5", BorderX.SOLID, 1).exBottom());
 		treeView.setPadding(Insets.EMPTY);
 		treeView.setStyle("-fx-background-insets: 0");
-		root = new TreeItem<>("根目录");
+		root = new TreeItem<>(rbx.def("root"));
 		root.setExpanded(true);
 		treeView.setRoot(root);
 		
 		HBox btnBox = new HBox();
-		Button confirm = new Button("确定");
-		Button cancel = new Button("取消");
+		confirm = new Button(rbx.def("confirm"));
+		cancel = new Button(rbx.def("cancel"));
 		btnBox.setPadding(new Insets(8, 0, 0, 0));
 		btnBox.setBorder(new BorderX("#B5B5B5", BorderX.SOLID, 1).top());
 		btnBox.setSpacing(8);
@@ -92,30 +100,35 @@ public class FolderSelector extends Stage {
 			}
 		});
 		// 确定
-		confirm.setOnAction(event -> {
-			treeView.setDisable(true);
-			confirm.setDisable(true);
-			cancel.setDisable(true);
-			
-			TreeItem<String> item = treeView.getSelectionModel().getSelectedItem();
-			StringBuffer toPath = new StringBuffer();
-			while (item.getParent() != null) {
-				toPath.insert(0, item.getValue() + File.separator);
-				item = item.getParent();
-			}
-			toPath.insert(0, "\\");
-			FileTPService request = new FileTPService(toPath.toString(), list, flag);
-			header.textProperty().bind(request.messageProperty());
-			request.valueProperty().addListener((obs, oldValue, newValue) -> {
-				if (newValue != null && newValue.equals("finish")) {
-					isFinish.set(true);
-					close();
-				}
-			});
-			request.start();
+		confirm.setOnAction(event -> confirm());
+		treeView.setOnKeyReleased(event -> {
+			if (event.getCode().equals(KeyCode.ENTER)) confirm();
 		});
 		
 		cancel.setOnAction(event -> close());
+	}
+	
+	private void confirm() {
+		treeView.setDisable(true);
+		confirm.setDisable(true);
+		cancel.setDisable(true);
+		
+		TreeItem<String> item = treeView.getSelectionModel().getSelectedItem();
+		StringBuffer toPath = new StringBuffer();
+		while (item.getParent() != null) {
+			toPath.insert(0, item.getValue() + File.separator);
+			item = item.getParent();
+		}
+		toPath.insert(0, File.separator);
+		FileTPService request = new FileTPService(toPath.substring(0, toPath.length() - 1), list, flag);
+		header.textProperty().bind(request.messageProperty());
+		request.valueProperty().addListener((obs, oldValue, newValue) -> {
+			if (newValue != null && newValue.equals("finish")) {
+				isFinish.set(true);
+				close();
+			}
+		});
+		request.start();
 	}
 	
 	// 获取文件夹

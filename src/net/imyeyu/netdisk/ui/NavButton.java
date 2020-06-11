@@ -18,7 +18,7 @@ public class NavButton extends Button {
 	}
 	
 	public NavButton(String text) {
-		init(text, 150, 36);
+		init(text, 155, 36);
 	}
 	
 	public NavButton(String text, double width, double height) {

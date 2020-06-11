@@ -8,7 +8,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
 
 import net.imyeyu.netdisk.bean.IOHistory;
 import net.imyeyu.netdisk.ctrl.Main;
@@ -16,12 +15,13 @@ import net.imyeyu.utils.YeyuUtils;
 
 public class IOHistoryLoader {
 	
-	private File file = new File("Netdisk.history");;
+	private File file = new File("iNetdisk.history");;
 
 	public List<IOHistory> get() {
 		List<IOHistory> list = new ArrayList<IOHistory>();;
 		try {
 			String data = file.exists() ? data = YeyuUtils.file().fileToString(file, "UTF-8") : def();
+			data = data == "null" ? "[]" : data;
 			JsonParser jp = new JsonParser();
 			JsonArray ja = (JsonArray) jp.parse(data);
 			JsonObject jo;
@@ -29,7 +29,7 @@ public class IOHistoryLoader {
 				jo = ja.get(i).getAsJsonObject();
 				list.add(new IOHistory(jo.get("name").getAsString(), jo.get("path").getAsString(), jo.get("isLocal").getAsBoolean()));
 			}
-		} catch (JsonSyntaxException e) {
+		} catch (Exception e) {
 			def();
 		}
 		return list;
